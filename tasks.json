@@ -1,0 +1,685 @@
+{
+  "agent_instructions": {
+    "before_start": [
+      "Прочитай этот файл и git log --oneline -20",
+      "Выбери ОДНУ задачу со статусом pending и наивысшим приоритетом",
+      "Проверь, что все dependencies этой задачи имеют статус done"
+    ],
+    "during_work": [
+      "Работай только над выбранной задачей",
+      "Делай коммиты после каждого логического изменения",
+      "Не трогай код, не связанный с текущей задачей"
+    ],
+    "before_finish": [
+      "Выполни ВСЕ test_steps из задачи",
+      "Меняй status на done ТОЛЬКО после успешного прохождения всех тестов",
+      "Напиши summary в progress.md",
+      "ЗАПРЕЩЕНО удалять или редактировать задачи — только менять status"
+    ]
+  },
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "category": "infrastructure",
+      "priority": "critical",
+      "description": "Инициализировать веб-приложение на Next.js с TypeScript, базовой структурой каталогов и скриптами dev/build по PRD §7.",
+      "acceptance_criteria": [
+        "Проект собирается без ошибок (npm run build или эквивалент).",
+        "В репозитории зафиксированы зависимости и README с командами запуска."
+      ],
+      "test_steps": [
+        "Шаг 1: клонировать/открыть репозиторий, установить зависимости.",
+        "Шаг 2: выполнить команду dev-сервера и открыть главную страницу в браузере.",
+        "Шаг 3: убедиться, что страница отдаётся без ошибок в консоли сервера."
+      ],
+      "dependencies": [],
+      "status": "done"
+    },
+    {
+      "id": "TASK-002",
+      "category": "infrastructure",
+      "priority": "critical",
+      "description": "Подключить PostgreSQL и инструмент миграций (Prisma, Drizzle или аналог) с возможностью применять схему из CLI/CI.",
+      "acceptance_criteria": [
+        "Есть конфигурация подключения к БД через переменные окружения.",
+        "Команда миграций успешно применяется к чистой БД."
+      ],
+      "test_steps": [
+        "Шаг 1: поднять локальный PostgreSQL или использовать указанный в .env.example хост.",
+        "Шаг 2: выполнить применение миграций.",
+        "Шаг 3: проверить в клиенте БД, что схема создана без ошибок."
+      ],
+      "dependencies": ["TASK-001"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-003",
+      "category": "infrastructure",
+      "priority": "critical",
+      "description": "Реализовать загрузку и валидацию переменных окружения для ключей из PRD §8 (MEDIA_*, ANON_*, DOWNLOAD_*, REVIEW_*).",
+      "acceptance_criteria": [
+        "Все перечисленные в PRD §8 ключи читаются из env с документированными default-значениями.",
+        "При отсутствии критичных секретов приложение падает при старте с понятной ошибкой."
+      ],
+      "test_steps": [
+        "Шаг 1: запустить приложение с минимальным набором env.",
+        "Шаг 2: изменить MEDIA_IMAGE_MAX_MB и убедиться, что значение доступно в коде загрузки или логах старта.",
+        "Шаг 3: убрать обязательную переменную (например DATABASE_URL) и убедиться, что старт завершается ошибкой."
+      ],
+      "dependencies": ["TASK-001"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-004",
+      "category": "infrastructure",
+      "priority": "critical",
+      "description": "Настроить S3-совместимый клиент для бакета артефактов (workflow JSON и медиа) через env (endpoint, ключи, bucket).",
+      "acceptance_criteria": [
+        "Клиент инициализируется из env; секреты не попадают в клиентский бандл.",
+        "Есть smoke-проверка подключения (например list buckets или head bucket) в dev-скрипте или документированной команде."
+      ],
+      "test_steps": [
+        "Шаг 1: задать переменные для MinIO/R2/S3 в .env.local.",
+        "Шаг 2: выполнить документированную проверку подключения.",
+        "Шаг 3: убедиться, что операция завершается успехом или осмысленной ошибкой доступа."
+      ],
+      "dependencies": ["TASK-001", "TASK-003"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-005",
+      "category": "functional",
+      "priority": "critical",
+      "description": "Миграция и модель User по PRD §6.1: id, provider, provider_subject, email, display_name, role, created_at; уникальность (provider, provider_subject).",
+      "acceptance_criteria": [
+        "Таблица соответствует полям и ограничениям PRD.",
+        "Повторная вставка с тем же (provider, provider_subject) отклоняется БД или приложением."
+      ],
+      "test_steps": [
+        "Шаг 1: применить миграции после TASK-002.",
+        "Шаг 2: вставить тестовую строку User через SQL или seed.",
+        "Шаг 3: попытаться вставить дубликат provider_subject — ожидается ошибка уникальности."
+      ],
+      "dependencies": ["TASK-002"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-006",
+      "category": "functional",
+      "priority": "critical",
+      "description": "Миграции Workflow и WorkflowFile по PRD §6.2–6.3 со связью один workflow — актуальный файл (или политика версий, задокументированная в коде).",
+      "acceptance_criteria": [
+        "Workflow содержит slug (уникальный), статус draft/published/archived, агрегаты-заглушки или nullable до следующих задач.",
+        "WorkflowFile хранит storage_key, content_type, byte_size, опционально sha256."
+      ],
+      "test_steps": [
+        "Шаг 1: применить миграции.",
+        "Шаг 2: создать Workflow и связанный WorkflowFile тестовыми данными.",
+        "Шаг 3: проверить в БД FK и уникальность slug."
+      ],
+      "dependencies": ["TASK-002"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-007",
+      "category": "functional",
+      "priority": "critical",
+      "description": "Миграции WorkflowNode (итоговый отображаемый список), Tag и WorkflowTag по PRD §6.4–6.5.",
+      "acceptance_criteria": [
+        "WorkflowNode связан с workflow_id, есть node_type, sort_order, source derived|admin.",
+        "Many-to-many тегов с уникальной парой (workflow_id, tag_id)."
+      ],
+      "test_steps": [
+        "Шаг 1: применить миграции.",
+        "Шаг 2: создать Tag, привязать к Workflow через WorkflowTag.",
+        "Шаг 3: добавить несколько WorkflowNode с разным sort_order и проверить порядок выборкой."
+      ],
+      "dependencies": ["TASK-006"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-008",
+      "category": "functional",
+      "priority": "critical",
+      "description": "Миграции DownloadEvent и UniqueDownload по PRD §6.6–6.7 с уникальными ограничениями для user и anon устройства.",
+      "acceptance_criteria": [
+        "DownloadEvent содержит поля из PRD включая ip_hash, counted_unique, occurred_at.",
+        "UniqueDownload обеспечивает не более одной записи на (workflow, user) и на (workflow, anon_device_id) для ненулевых ключей."
+      ],
+      "test_steps": [
+        "Шаг 1: применить миграции.",
+        "Шаг 2: вставить первую UniqueDownload для пары workflow+user.",
+        "Шаг 3: повторная вставка с теми же ключами должна нарушать уникальность."
+      ],
+      "dependencies": ["TASK-005", "TASK-006"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-009",
+      "category": "functional",
+      "priority": "critical",
+      "description": "Миграция Review по PRD §6.8: рейтинг 1–5, опциональный body, soft delete через deleted_at; уникальность (workflow_id, user_id) среди не удалённых.",
+      "acceptance_criteria": [
+        "Поля и soft delete соответствуют PRD.",
+        "Нельзя создать два активных отзыва одного пользователя на один workflow."
+      ],
+      "test_steps": [
+        "Шаг 1: применить миграции.",
+        "Шаг 2: создать Review с rating 3.",
+        "Шаг 3: попытаться создать второй активный Review для того же user+workflow — ожидается ошибка."
+      ],
+      "dependencies": ["TASK-005", "TASK-006"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-010",
+      "category": "functional",
+      "priority": "high",
+      "description": "Миграция MediaAsset по PRD §6.9: kind, role input_example|output_example, storage_key, лимиты на уровне приложения (отдельная задача).",
+      "acceptance_criteria": [
+        "Таблица и enum-поля соответствуют PRD.",
+        "Связь с workflow_id обязательна."
+      ],
+      "test_steps": [
+        "Шаг 1: применить миграции.",
+        "Шаг 2: вставить запись MediaAsset для существующего workflow.",
+        "Шаг 3: убедиться, что удаление workflow каскадом или политика ON DELETE задокументирована и работает."
+      ],
+      "dependencies": ["TASK-006"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-011",
+      "category": "functional",
+      "priority": "low",
+      "description": "Миграция AdminAuditLog по PRD §6.10 для последующей записи действий администратора.",
+      "acceptance_criteria": [
+        "Поля action, entity_type, entity_id, payload_json, admin_user_id, created_at присутствуют.",
+        "В документации кода указано, что секреты в payload_json не логируются."
+      ],
+      "test_steps": [
+        "Шаг 1: применить миграции.",
+        "Шаг 2: вставить тестовую запись аудита.",
+        "Шаг 3: выбрать запись по id и убедиться в целостности FK на admin_user_id."
+      ],
+      "dependencies": ["TASK-005"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-012",
+      "category": "security",
+      "priority": "critical",
+      "description": "Базовая сессия после OAuth: HTTP-only cookie, флаги Secure (в prod) и SameSite=Lax/совместимое с redirect; привязка к User.",
+      "acceptance_criteria": [
+        "Сессия не доступна из JS (httpOnly).",
+        "Описано поведение в dev (HTTP) vs prod (HTTPS)."
+      ],
+      "test_steps": [
+        "Шаг 1: после заглушки логина или dev-endpoint установить сессионную cookie.",
+        "Шаг 2: в DevTools проверить флаги cookie.",
+        "Шаг 3: перезапустить браузер и убедиться, что сессия сохраняется до истечения срока (если настроено)."
+      ],
+      "dependencies": ["TASK-005"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-013",
+      "category": "security",
+      "priority": "critical",
+      "description": "OAuth 2.0 / OIDC вход через Google: callback, обмен кода, upsert User, создание сессии по PRD §5.7.",
+      "acceptance_criteria": [
+        "Пользователь успешно входит через Google и получает сессию.",
+        "Ошибки провайдера отображаются пользователю без утечки секретов."
+      ],
+      "test_steps": [
+        "Шаг 1: настроить OAuth credentials в консоли Google.",
+        "Шаг 2: пройти полный redirect flow на локальном/staging URL.",
+        "Шаг 3: проверить в БД, что User создан с provider=google и корректным provider_subject."
+      ],
+      "dependencies": ["TASK-012"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-014",
+      "category": "security",
+      "priority": "critical",
+      "description": "OAuth 2.0 / OIDC вход через GitHub: аналогично Google, общая модель User и сессии.",
+      "acceptance_criteria": [
+        "Вход через GitHub создаёт или обновляет User с provider=github.",
+        "Один и тот же email с разных провайдеров обрабатывается по задокументированной политике (ссылка или отдельные учётки)."
+      ],
+      "test_steps": [
+        "Шаг 1: настроить GitHub OAuth App.",
+        "Шаг 2: пройти redirect flow.",
+        "Шаг 3: проверить сессию и запись User в БД."
+      ],
+      "dependencies": ["TASK-012"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-015",
+      "category": "security",
+      "priority": "critical",
+      "description": "Ограничение админ-маршрутов: только role=admin или env-allowlist; защита API изменения данных каталога.",
+      "acceptance_criteria": [
+        "Не-админ получает 403 на админ API и UI.",
+        "Гость не может вызвать мутации workflow."
+      ],
+      "test_steps": [
+        "Шаг 1: зайти под пользователем без роли admin и открыть админ URL.",
+        "Шаг 2: выполнить запрос к защищённому admin API с пользовательской сессией.",
+        "Шаг 3: ожидается отказ доступа; под admin — успех."
+      ],
+      "dependencies": ["TASK-013", "TASK-014"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-016",
+      "category": "functional",
+      "priority": "critical",
+      "description": "Парсер ComfyUI workflow JSON: извлечь уникальные идентификаторы типов нод; сохранить как derived WorkflowNode; зафиксировать выбранную стратегию для форматов экспорта (PRD §14 п.2) в коде или ADR.",
+      "acceptance_criteria": [
+        "На валидном примере JSON получается непустой список типов нод без дубликатов (или с задокументированным объединением).",
+        "Невалидный/не workflow JSON отклоняется с понятной ошибкой."
+      ],
+      "test_steps": [
+        "Шаг 1: передать эталонный файл workflow из ComfyUI в функцию парсинга (тест или скрипт).",
+        "Шаг 2: сравнить результат с ожидаемым набором типов.",
+        "Шаг 3: передать повреждённый JSON и убедиться в ошибке парсинга."
+      ],
+      "dependencies": ["TASK-006", "TASK-007"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-017",
+      "category": "functional",
+      "priority": "critical",
+      "description": "Политика при новой загрузке JSON: сброс admin override списка нод и пересборка отображаемого списка из derived (рекомендация PRD §5.2).",
+      "acceptance_criteria": [
+        "После успешной замены JSON производства admin_nodes сбрасывается или заменяется derived согласно выбранной политике, задокументированной в коде.",
+        "Админ видит актуальный derived до следующего ручного сохранения override."
+      ],
+      "test_steps": [
+        "Шаг 1: создать workflow с override нод.",
+        "Шаг 2: загрузить новый JSON с другим набором нод.",
+        "Шаг 3: убедиться, что в БД отображаемый список соответствует политике (например, только derived)."
+      ],
+      "dependencies": ["TASK-016"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-018",
+      "category": "integration",
+      "priority": "critical",
+      "description": "Admin API/UI-часть: CRUD метаданных Workflow (title, slug, description, status, base_model, comfy_version, author_display_name, теги) по PRD §4.3 и §5.5.",
+      "acceptance_criteria": [
+        "Черновики и архив не попадают в публичный каталог (проверка на уровне публичного API в отдельной задаче).",
+        "Slug уникален; валидация обязательных полей при publish по политике команды."
+      ],
+      "test_steps": [
+        "Шаг 1: под админом создать workflow в статусе draft.",
+        "Шаг 2: отредактировать поля и сохранить.",
+        "Шаг 3: опубликовать и убедиться, что запись видна в админ-списке со статусом published."
+      ],
+      "dependencies": ["TASK-006", "TASK-007", "TASK-015"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-019",
+      "category": "integration",
+      "priority": "critical",
+      "description": "Загрузка workflow JSON админом: валидация как parseable ComfyUI, запись в object storage, обновление WorkflowFile, запуск парсера нод и политики сброса override (PRD §5.5–5.2).",
+      "acceptance_criteria": [
+        "Опубликовать workflow без успешного JSON нельзя (нет bypass по умолчанию).",
+        "Файл в хранилище недоступен публично без signed URL/прокси (проверяется в задаче скачивания)."
+      ],
+      "test_steps": [
+        "Шаг 1: под админом загрузить валидный JSON.",
+        "Шаг 2: проверить в S3/MinIO наличие объекта по storage_key.",
+        "Шаг 3: проверить в БД WorkflowNode после парсинга; загрузить мусор и убедиться в отказе."
+      ],
+      "dependencies": ["TASK-004", "TASK-016", "TASK-017", "TASK-018"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-020",
+      "category": "integration",
+      "priority": "high",
+      "description": "Публичный API списка workflow: только status=published, пагинация или курсор; отдача денормализованных агрегатов для сортировки.",
+      "acceptance_criteria": [
+        "Draft и archived никогда не возвращаются публичным list endpoint.",
+        "Ответ содержит поля для рейтинга, числа отзывов и unique_download_count согласно схеме API проекта."
+      ],
+      "test_steps": [
+        "Шаг 1: создать published и draft workflow в БД.",
+        "Шаг 2: вызвать публичный list API без авторизации.",
+        "Шаг 3: убедиться, что в ответе только published и пагинация работает на второй странице."
+      ],
+      "dependencies": ["TASK-018"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-021",
+      "category": "integration",
+      "priority": "high",
+      "description": "Поиск по каталогу по title/description: реализовать выбранный вариант (tsvector, ILIKE или внешний поиск) и зафиксировать решение PRD §14 п.1 в репозитории.",
+      "acceptance_criteria": [
+        "Запрос с подстрокой из title возвращает соответствующий workflow.",
+        "Пустой запрос ведёт себя предсказуемо (все или ошибка валидации — задокументировано)."
+      ],
+      "test_steps": [
+        "Шаг 1: создать два published workflow с разными названиями.",
+        "Шаг 2: вызвать поисковый endpoint с ключевым словом только первого.",
+        "Шаг 3: убедиться, что второй не в результатах."
+      ],
+      "dependencies": ["TASK-020"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-022",
+      "category": "integration",
+      "priority": "high",
+      "description": "Фильтры каталога: теги (multi), base_model, comfy_version по PRD §5.1.",
+      "acceptance_criteria": [
+        "Комбинация фильтров сужает выдачу по логическому AND.",
+        "Несуществующий тег даёт пустую выдачу или 404 тега — поведение задокументировано."
+      ],
+      "test_steps": [
+        "Шаг 1: подготовить данные с пересекающимися тегами и разными base_model.",
+        "Шаг 2: вызвать API с одним тегом, затем с двумя.",
+        "Шаг 3: сравнить количество записей с ожидаемым."
+      ],
+      "dependencies": ["TASK-020"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-023",
+      "category": "integration",
+      "priority": "high",
+      "description": "Сортировка каталога: по average_rating, unique_download_count, дате публикации/обновления по PRD §5.1.",
+      "acceptance_criteria": [
+        "Порядок при sort=rating соответствует полю в БД.",
+        "Сортировка по дате использует published_at или updated_at согласно задокументированному правилу."
+      ],
+      "test_steps": [
+        "Шаг 1: создать три workflow с разными агрегатами и датами.",
+        "Шаг 2: запросить список с сортировкой по рейтингу desc.",
+        "Шаг 3: проверить порядок id в ответе вручную или автотестом."
+      ],
+      "dependencies": ["TASK-020"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-024",
+      "category": "ui",
+      "priority": "high",
+      "description": "Страница каталога: плотный текстовый список без превью изображений; отображение рейтинга, загрузок, тегов, base model, версии ComfyUI; EN UI по PRD §5.8 и §9.",
+      "acceptance_criteria": [
+        "В строках списка нет img для workflow.",
+        "Подключены поиск, фильтры и сортировка из API."
+      ],
+      "test_steps": [
+        "Шаг 1: открыть /catalog (или аналог) в браузере.",
+        "Шаг 2: применить фильтр по тегу и сменить сортировку.",
+        "Шаг 3: убедиться визуально и в Network, что данные соответствуют API."
+      ],
+      "dependencies": ["TASK-020", "TASK-021", "TASK-022", "TASK-023"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-025",
+      "category": "ui",
+      "priority": "high",
+      "description": "Страница детали workflow: обзор, требования (версия, base model), полный список нод (политика admin vs derived), блок отзывов с пагинацией, CTA скачивания; без блоков примеров медиа до TASK-037.",
+      "acceptance_criteria": [
+        "Список нод соответствует правилу PRD §5.2 (admin final если задан, иначе derived).",
+        "Отображается публичный unique_download_count."
+      ],
+      "test_steps": [
+        "Шаг 1: открыть страницу по slug опубликованного workflow.",
+        "Шаг 2: сравнить список нод с данными в БД.",
+        "Шаг 3: перейти на вторую страницу отзывов, если есть пагинация."
+      ],
+      "dependencies": ["TASK-020", "TASK-016"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-026",
+      "category": "integration",
+      "priority": "high",
+      "description": "Endpoint скачивания JSON: проверка published, выдача через короткоживущий signed URL или прокси; объект в bucket не world-readable (PRD §5.3, §10).",
+      "acceptance_criteria": [
+        "Гость может скачать только published workflow.",
+        "Прямой URL бакета без подписи не отдаёт файл (проверка конфигурации или 403)."
+      ],
+      "test_steps": [
+        "Шаг 1: без авторизации запросить скачивание published workflow.",
+        "Шаг 2: получить файл и убедиться, что это валидный JSON.",
+        "Шаг 3: запросить draft под прямым id/slug — ожидается отказ."
+      ],
+      "dependencies": ["TASK-004", "TASK-008", "TASK-019"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-027",
+      "category": "security",
+      "priority": "high",
+      "description": "Rate limiting на скачивание: per IP и per account согласно DOWNLOAD_RATE_LIMIT_PER_IP_PER_MIN из env (PRD §5.3, §8).",
+      "acceptance_criteria": [
+        "При превышении лимита возвращается 429 с понятным сообщением.",
+        "Лимит конфигурируется через env без изменения кода."
+      ],
+      "test_steps": [
+        "Шаг 1: установить низкий лимит в env для теста.",
+        "Шаг 2: выполнить серию запросов скачивания с одного IP.",
+        "Шаг 3: убедиться, что после порога ответ 429."
+      ],
+      "dependencies": ["TASK-026", "TASK-003"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-028",
+      "category": "functional",
+      "priority": "high",
+      "description": "Учёт уникальных загрузок: для авторизованных user — не более одного прироста счётчика на (user, workflow); для гостей cookie anon_device_id (UUID) и учёт по (workflow, anon); зафиксировать момент выдачи cookie (PRD §14 п.3).",
+      "acceptance_criteria": [
+        "Повторное скачивание тем же пользователем не увеличивает unique_download_count.",
+        "Повторное скачивание с тем же anon_device_id не увеличивает счётчик."
+      ],
+      "test_steps": [
+        "Шаг 1: скачать workflow дважды под одной учёткой и сравнить счётчик до/после.",
+        "Шаг 2: в гостевом режиме сохранить cookie и повторить скачивание.",
+        "Шаг 3: убедиться, что UniqueDownload одна запись на ключ."
+      ],
+      "dependencies": ["TASK-026", "TASK-008", "TASK-012"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-029",
+      "category": "security",
+      "priority": "medium",
+      "description": "Anti-abuse: лимит новых анонимных устройств на IP, регистрирующих первую уникальную загрузку по workflow за окно (ANON_NEW_DEVICE_PER_IP_PER_WORKFLOW_HOUR).",
+      "acceptance_criteria": [
+        "При превышении лимита новые anon_device_id не увеличивают публичный счётчик (но событие может логироваться с counted_unique=false).",
+        "Поведение описано в комментарии к коду."
+      ],
+      "test_steps": [
+        "Шаг 1: симулировать несколько новых UUID cookie с одного IP (тест или скрипт).",
+        "Шаг 2: после порога убедиться, что unique_download_count не растёт.",
+        "Шаг 3: проверить наличие DownloadEvent с counted_unique=false при необходимости."
+      ],
+      "dependencies": ["TASK-028", "TASK-003"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-030",
+      "category": "integration",
+      "priority": "high",
+      "description": "Логирование сырых DownloadEvent: ip_hash с солью, timestamp, workflow_id, user_id если есть, anon_device_id, outcome, counted_unique (PRD §5.3).",
+      "acceptance_criteria": [
+        "Каждая попытка скачивания порождает запись или задокументированное исключение (например отказ до проверки).",
+        "IP в логах только в виде хеша."
+      ],
+      "test_steps": [
+        "Шаг 1: выполнить успешное скачивание.",
+        "Шаг 2: найти запись в DownloadEvent с counted_unique согласно логике.",
+        "Шаг 3: убедиться, что поле ip_hash заполнено, сырого IP нет."
+      ],
+      "dependencies": ["TASK-026", "TASK-008"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-031",
+      "category": "ui",
+      "priority": "medium",
+      "description": "Админ-интерфейс или API для просмотра сырых логов скачиваний и сравнения с уникальным счётчиком (диагностика всплесков) по PRD §5.3.",
+      "acceptance_criteria": [
+        "Админ видит список событий с фильтром по workflow и времени.",
+        "Не-админ не имеет доступа."
+      ],
+      "test_steps": [
+        "Шаг 1: под админом открыть раздел логов скачиваний.",
+        "Шаг 2: отфильтровать по workflow.",
+        "Шаг 3: под обычным пользователем убедиться в 403."
+      ],
+      "dependencies": ["TASK-030", "TASK-015"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-032",
+      "category": "integration",
+      "priority": "medium",
+      "description": "API отзывов: создание/редактирование/удаление только авторизованным владельцем; гейт по qualifying download (скачивание под этим user) по PRD §5.4.",
+      "acceptance_criteria": [
+        "Без предварительного квалифицирующего скачивания POST отзыва возвращает 403/422 с понятным телом.",
+        "Один отзыв на пару (user, workflow) — upsert одной записи."
+      ],
+      "test_steps": [
+        "Шаг 1: войти, не скачивать workflow, попытаться оставить отзыв — отказ.",
+        "Шаг 2: скачать workflow под этой учёткой, создать отзыв 5 звёзд.",
+        "Шаг 3: изменить на 4 звезды и убедиться, что запись одна."
+      ],
+      "dependencies": ["TASK-009", "TASK-012", "TASK-028"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-033",
+      "category": "security",
+      "priority": "medium",
+      "description": "Санитизация текста отзыва (HTML escape), лимит REVIEW_BODY_MAX_CHARS, rate limit на запись отзывов per user (PRD §5.4, §10).",
+      "acceptance_criteria": [
+        "Вставка HTML в body не исполняется в UI при отображении.",
+        "Превышение длины и частые POST отклоняются."
+      ],
+      "test_steps": [
+        "Шаг 1: отправить отзыв с тегом script в body.",
+        "Шаг 2: открыть страницу детали и убедиться в экранировании.",
+        "Шаг 3: превысить лимит длины и получить ошибку валидации."
+      ],
+      "dependencies": ["TASK-032", "TASK-003"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-034",
+      "category": "functional",
+      "priority": "medium",
+      "description": "Транзакционный пересчёт average_rating и review_count на Workflow при записи/soft-delete отзыва (PRD §5.1, §5.4).",
+      "acceptance_criteria": [
+        "После добавления отзыва агрегаты совпадают с вычислением по активным отзывам.",
+        "После soft-delete отзыва агрегаты обновлены."
+      ],
+      "test_steps": [
+        "Шаг 1: создать два отзыва с известными оценками.",
+        "Шаг 2: сверить average_rating в БД с ручным средним.",
+        "Шаг 3: удалить один отзыв (soft) и пересчитать ожидание."
+      ],
+      "dependencies": ["TASK-032", "TASK-006"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-035",
+      "category": "integration",
+      "priority": "medium",
+      "description": "Админ: удаление любого отзыва (soft-delete), поведение публичного API для удалённых отзывов зафиксировано (PRD §14 п.4).",
+      "acceptance_criteria": [
+        "После admin delete отзыв не показывается в публичном списке.",
+        "Аудит или лог модерации опционален в рамках TASK-039."
+      ],
+      "test_steps": [
+        "Шаг 1: создать отзыв пользователем.",
+        "Шаг 2: под админом выполнить удаление.",
+        "Шаг 3: открыть публичную страницу детали — отзыва нет, review_count обновлён."
+      ],
+      "dependencies": ["TASK-032", "TASK-015", "TASK-034"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-036",
+      "category": "integration",
+      "priority": "medium",
+      "description": "Загрузка примеров медиа админом: лимиты размера и количества по PRD §5.6 и §8, allowlist MIME, запись в MediaAsset и object storage; URL выдачи через CDN/signed URLs.",
+      "acceptance_criteria": [
+        "Загрузка файла выше лимита отклоняется.",
+        "Нельзя добавить больше 5 изображений или больше 1 видео на роль блока."
+      ],
+      "test_steps": [
+        "Шаг 1: загрузить валидное изображение в input_example.",
+        "Шаг 2: попытаться загрузить 6-е изображение в тот же блок — отказ.",
+        "Шаг 3: проверить отдачу URL на странице детали (после TASK-037) или через API."
+      ],
+      "dependencies": ["TASK-004", "TASK-010", "TASK-018", "TASK-003"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-037",
+      "category": "ui",
+      "priority": "medium",
+      "description": "UI блоков Input/Output на детальной странице: до 5 изображений и 0–1 видео на блок; lazy-load видео; без автозвука (PRD §5.2, §9).",
+      "acceptance_criteria": [
+        "Каталог по-прежнему без превью workflow.",
+        "Видео не начинает воспроизведение с звуком без действия пользователя."
+      ],
+      "test_steps": [
+        "Шаг 1: добавить медиа через админку.",
+        "Шаг 2: открыть детальную страницу и прокрутить к примерам.",
+        "Шаг 3: в DevTools убедиться в lazy loading для video (loading=lazy или аналог)."
+      ],
+      "dependencies": ["TASK-025", "TASK-036"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-038",
+      "category": "security",
+      "priority": "medium",
+      "description": "Паспорт безопасности v1: HTTPS в проде, политика cookies, минимизация PII в логах, ссылка на требования privacy policy из PRD §10; краткий SECURITY.md или раздел в README.",
+      "acceptance_criteria": [
+        "Документ перечисляет OAuth, session cookie, anon_device_id, видимость админом сырых логов.",
+        "Нет секретов в репозитории; .env.example актуален."
+      ],
+      "test_steps": [
+        "Шаг 1: прочитать SECURITY.md/README раздел.",
+        "Шаг 2: сверить с PRD §10 пункт за пунктом.",
+        "Шаг 3: убедиться, что в репозитории нет ключей AWS/OAuth."
+      ],
+      "dependencies": ["TASK-003", "TASK-027", "TASK-033"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-039",
+      "category": "integration",
+      "priority": "low",
+      "description": "Запись AdminAuditLog на критические действия (создание/публикация workflow, загрузка JSON, удаление отзыва, загрузка медиа); redact секретов в payload_json.",
+      "acceptance_criteria": [
+        "После каждого из перечисленных действий создаётся запись с корректным admin_user_id.",
+        "В payload_json нет сырых токенов и presigned query string с секретом."
+      ],
+      "test_steps": [
+        "Шаг 1: под админом опубликовать workflow.",
+        "Шаг 2: найти запись аудита с action и entity_id.",
+        "Шаг 3: выполнить удаление отзыва и убедиться во второй записи."
+      ],
+      "dependencies": ["TASK-011", "TASK-018", "TASK-035", "TASK-036"],
+      "status": "pending"
+    }
+  ]
+}

@@ -13,7 +13,7 @@ ComfyUI workflow catalog (see [PRD.md](./PRD.md)).
 npm install
 ```
 
-Copy [`.env.example`](./.env.example) to `.env` or `.env.local` and set `DATABASE_URL` for your PostgreSQL instance.
+Copy [`.env.example`](./.env.example) to `.env` or `.env.local` and set `DATABASE_URL` for your PostgreSQL instance. The app validates environment on load: `DATABASE_URL` must be set; limits from PRD §8 (`MEDIA_*`, `ANON_*`, `DOWNLOAD_*`, `REVIEW_*`) are optional and use [PRD.md](./PRD.md) defaults when unset.
 
 To run PostgreSQL locally with Docker:
 

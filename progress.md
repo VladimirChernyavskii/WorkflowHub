@@ -25,3 +25,9 @@
 **Артефакты:** [`lib/env.ts`](./lib/env.ts) (Zod + `server-only`), импорт в [`app/layout.tsx`](./app/layout.tsx) для проверки при сборке/SSR; расширен [`.env.example`](./.env.example); в [README](README.md) кратко описана политика env.
 
 **Проверки:** `npm run build` и `npm run lint` — успешно при заданном `DATABASE_URL`; без `DATABASE_URL` сборка падает с сообщением о необходимости переменной; `MEDIA_IMAGE_MAX_MB=7` + `npm run dev` — в логе старта строка `[workflowhub] env loaded — MEDIA_IMAGE_MAX_MB=7`; `MEDIA_IMAGE_MAX_MB=0` — сборка с понятной ошибкой валидации.
+
+## TASK-004 (done)
+
+Настроен **S3-совместимый клиент** (`@aws-sdk/client-s3`) для бакета артефактов: переменные `S3_ENDPOINT`, `S3_REGION` (дефолт `us-east-1`), `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_BUCKET`, `S3_FORCE_PATH_STYLE`; при непустом `S3_BUCKET` обязательны ключи. Парсинг вынесен в [`lib/env-parse.ts`](./lib/env-parse.ts) (`parseEnv`), приложение по-прежнему подключает [`lib/env.ts`](./lib/env.ts) (`server-only`). Фабрика без `server-only`: [`lib/s3-factory.ts`](./lib/s3-factory.ts); кэширующий доступ в приложении: [`lib/s3.ts`](./lib/s3.ts). Smoke: `npm run storage:smoke` ([`scripts/s3-smoke.ts`](./scripts/s3-smoke.ts)) — загрузка `.env` / `.env.local`, `HeadBucket`; зависимости `tsx`, `dotenv` (dev).
+
+**Проверки:** `DATABASE_URL=… npm run build` и `npm run lint` — успешно; без настроек S3 `npm run storage:smoke` завершается с осмысленным сообщением «S3 is not configured…»; при заданных MinIO/R2/S3 в `.env.local` ожидается `S3 smoke OK` или понятная ошибка SDK при неверных правах.

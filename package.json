@@ -11,9 +11,11 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "storage:smoke": "tsx scripts/s3-smoke.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1019.0",
     "@prisma/client": "^6.19.2",
     "next": "^15.2.4",
     "react": "^19.0.0",
@@ -26,11 +28,13 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.20",
+    "dotenv": "^17.3.1",
     "eslint": "^8.57.0",
     "eslint-config-next": "^15.2.4",
     "postcss": "^8.4.49",
     "prisma": "^6.19.2",
     "tailwindcss": "^3.4.16",
+    "tsx": "^4.21.0",
     "typescript": "^5.7.2"
   }
 }

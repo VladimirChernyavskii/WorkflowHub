@@ -101,7 +101,7 @@
         "Шаг 3: попытаться вставить дубликат provider_subject — ожидается ошибка уникальности."
       ],
       "dependencies": ["TASK-002"],
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "TASK-006",

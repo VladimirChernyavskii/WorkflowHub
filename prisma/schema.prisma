@@ -7,6 +7,30 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum AuthProvider {
+  google
+  github
+}
+
+enum UserRole {
+  user
+  admin
+}
+
+/// PRD §6.1
+model User {
+  id              String       @id @default(uuid()) @db.Uuid
+  provider        AuthProvider
+  providerSubject String       @map("provider_subject")
+  email           String?
+  displayName     String       @map("display_name")
+  role            UserRole
+  createdAt       DateTime     @default(now()) @map("created_at")
+
+  @@unique([provider, providerSubject])
+  @@map("users")
+}
+
 /// Baseline table for migration tooling (TASK-002). Domain models are added in later tasks.
 model SchemaBaseline {
   id        Int      @id @default(autoincrement())

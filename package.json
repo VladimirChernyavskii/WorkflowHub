@@ -13,6 +13,7 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:user-smoke": "tsx scripts/user-unique-smoke.ts",
+    "db:workflow-smoke": "tsx scripts/workflow-smoke.ts",
     "storage:smoke": "tsx scripts/s3-smoke.ts"
   },
   "dependencies": {

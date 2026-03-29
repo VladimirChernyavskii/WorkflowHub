@@ -39,3 +39,11 @@
 Проверка уникальности: [`scripts/user-unique-smoke.ts`](./scripts/user-unique-smoke.ts) — `npm run db:user-smoke` после применения миграций (ожидается `P2002` на второй вставке с тем же провайдером и `provider_subject`). Вручную (после `npm run db:migrate:deploy`): одна вставка в `users`, вторая с тем же `(provider, provider_subject)` — ошибка уникальности от PostgreSQL.
 
 **Проверки в репозитории:** `npx prisma validate`, `npm run lint`, `DATABASE_URL=… npm run build` — успешно. Полный цикл `test_steps` из `tasks.json` (миграции + вставка + дубликат) выполняется при запущенном PostgreSQL (`docker compose up -d db` при доступном Docker), затем `npm run db:migrate:deploy` и `npm run db:user-smoke`.
+
+## TASK-006 (done)
+
+Добавлены **Workflow** (PRD §6.2) и **WorkflowFile** (PRD §6.3) в [`prisma/schema.prisma`](./prisma/schema.prisma): enum `WorkflowStatus` (`draft`, `published`, `archived`), поля workflow по PRD включая денормализованные агрегаты с default’ами (`unique_download_count`, `average_rating`, `review_count`), `created_at` / `updated_at` / опциональный `published_at`. Таблицы `workflows`, `workflow_files`; уникальный `slug`; уникальный `workflow_id` на файле — **один актуальный JSON на workflow** (в комментарии к схеме зафиксировано, что история версий — в object storage при необходимости); FK `ON DELETE CASCADE`. Миграция: [`prisma/migrations/20260329133846_add_workflow_and_workflow_file`](./prisma/migrations/20260329133846_add_workflow_and_workflow_file).
+
+Проверка: [`scripts/workflow-smoke.ts`](./scripts/workflow-smoke.ts) — `npm run db:workflow-smoke` (создание пары Workflow + WorkflowFile, ожидание `P2002` на второй файл с тем же `workflow_id` и на дубликат `slug`).
+
+**Проверки в репозитории:** `npx prisma validate`, `npm run build`, `npm run db:workflow-smoke` и `npm run db:user-smoke` — успешно при настроенном `DATABASE_URL`.

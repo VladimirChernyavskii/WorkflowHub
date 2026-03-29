@@ -118,7 +118,7 @@
         "Шаг 3: проверить в БД FK и уникальность slug."
       ],
       "dependencies": ["TASK-002"],
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "TASK-007",

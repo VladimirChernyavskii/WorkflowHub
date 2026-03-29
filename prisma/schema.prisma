@@ -17,6 +17,12 @@ enum UserRole {
   admin
 }
 
+enum WorkflowStatus {
+  draft
+  published
+  archived
+}
+
 /// PRD §6.1
 model User {
   id              String       @id @default(uuid()) @db.Uuid
@@ -29,6 +35,42 @@ model User {
 
   @@unique([provider, providerSubject])
   @@map("users")
+}
+
+/// PRD §6.2. v1: one row in `workflow_files` per workflow = current JSON artifact only; history lives in object storage if needed.
+model Workflow {
+  id                  String         @id @default(uuid()) @db.Uuid
+  slug                String         @unique
+  title               String
+  description         String         @db.Text
+  status              WorkflowStatus
+  baseModel           String         @map("base_model")
+  comfyVersion        String         @map("comfy_version")
+  authorDisplayName   String         @map("author_display_name")
+  uniqueDownloadCount Int            @default(0) @map("unique_download_count")
+  averageRating       Decimal        @default(0) @db.Decimal(3, 2) @map("average_rating")
+  reviewCount         Int            @default(0) @map("review_count")
+  createdAt           DateTime       @default(now()) @map("created_at")
+  updatedAt           DateTime       @updatedAt @map("updated_at")
+  publishedAt         DateTime?      @map("published_at")
+
+  currentFile WorkflowFile?
+
+  @@map("workflows")
+}
+
+/// PRD §6.3. Unique `workflow_id` enforces a single current file per workflow (see Workflow).
+model WorkflowFile {
+  id          String   @id @default(uuid()) @db.Uuid
+  workflowId  String   @unique @map("workflow_id") @db.Uuid
+  workflow    Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  storageKey  String   @map("storage_key")
+  contentType String   @map("content_type")
+  byteSize    Int      @map("byte_size")
+  sha256      String?  @map("sha256")
+  uploadedAt  DateTime @default(now()) @map("uploaded_at")
+
+  @@map("workflow_files")
 }
 
 /// Baseline table for migration tooling (TASK-002). Domain models are added in later tasks.

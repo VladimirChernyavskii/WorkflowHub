@@ -14,6 +14,7 @@
     "db:studio": "prisma studio",
     "db:user-smoke": "tsx scripts/user-unique-smoke.ts",
     "db:workflow-smoke": "tsx scripts/workflow-smoke.ts",
+    "db:workflow-node-tag-smoke": "tsx scripts/workflow-node-tag-smoke.ts",
     "storage:smoke": "tsx scripts/s3-smoke.ts"
   },
   "dependencies": {

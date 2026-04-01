@@ -79,3 +79,11 @@
 Проверка: `npm run db:media-asset-smoke` ([`scripts/media-asset-smoke.ts`](./scripts/media-asset-smoke.ts)) — вставка `MediaAsset` для тестового workflow, затем удаление workflow и проверка, что строки в `media_assets` не остались.
 
 **Проверки в репозитории:** `npx prisma validate`, `npm run db:media-asset-smoke` при настроенном `DATABASE_URL`.
+
+## TASK-011 (done)
+
+Добавлена модель **AdminAuditLog** (PRD §6.10) в [`prisma/schema.prisma`](./prisma/schema.prisma): `admin_user_id` → `users` с `ON DELETE RESTRICT`, поля `action`, `entity_type`, `entity_id` (UUID), `payload_json` (JSONB), `created_at`. В комментарии к модели зафиксировано: в `payload_json` не сохранять секреты и токены — редать на записи. Обратная связь `adminAuditLogs` на `User`. Миграция: [`prisma/migrations/20260401065405_add_admin_audit_log`](./prisma/migrations/20260401065405_add_admin_audit_log).
+
+Проверка: `npm run db:admin-audit-log-smoke` ([`scripts/admin-audit-log-smoke.ts`](./scripts/admin-audit-log-smoke.ts)) — вставка аудита для тестового admin-пользователя, выборка по `id`, ожидание `P2003` при несуществующем `admin_user_id`.
+
+**Проверки в репозитории:** `npx prisma validate`, `npm run lint`, `npm run build`, `npm run db:admin-audit-log-smoke` при настроенном `DATABASE_URL`.

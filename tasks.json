@@ -203,7 +203,7 @@
         "Шаг 3: выбрать запись по id и убедиться в целостности FK на admin_user_id."
       ],
       "dependencies": ["TASK-005"],
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "TASK-012",

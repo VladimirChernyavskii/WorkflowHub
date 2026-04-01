@@ -18,6 +18,7 @@
     "db:unique-download-smoke": "tsx scripts/unique-download-smoke.ts",
     "db:review-smoke": "tsx scripts/review-smoke.ts",
     "db:media-asset-smoke": "tsx scripts/media-asset-smoke.ts",
+    "db:admin-audit-log-smoke": "tsx scripts/admin-audit-log-smoke.ts",
     "storage:smoke": "tsx scripts/s3-smoke.ts"
   },
   "dependencies": {

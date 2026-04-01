@@ -102,6 +102,15 @@ export const envSchema = z
 
     GITHUB_CLIENT_ID: optionalTrimmed,
     GITHUB_CLIENT_SECRET: optionalTrimmed,
+
+    /**
+     * Comma- or newline-separated emails that grant admin access (TASK-015).
+     * Case-insensitive; empty → only `User.role === admin` applies.
+     */
+    ADMIN_EMAIL_ALLOWLIST: z.preprocess((raw: unknown) => {
+      if (raw === undefined || raw === "") return "";
+      return String(raw).trim();
+    }, z.string()),
   })
   .superRefine((data, ctx) => {
     const googlePartial =
@@ -207,6 +216,7 @@ export function readProcessEnv() {
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
     GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
+    ADMIN_EMAIL_ALLOWLIST: process.env.ADMIN_EMAIL_ALLOWLIST,
   };
 }
 

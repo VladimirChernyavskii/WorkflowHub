@@ -113,3 +113,13 @@
 **UI:** [`app/login/page.tsx`](./app/login/page.tsx) — кнопки Google и/или GitHub в зависимости от конфигурации.
 
 **Проверки в репозитории:** `npm run lint`, `npm run build` — успешно. Полный цикл из `test_steps` задачи (OAuth App на GitHub, redirect flow, строка в `users` с `provider=github`) — вручную при заданных `GITHUB_*`, `AUTH_BASE_URL` и работающей БД.
+
+## TASK-015 (done)
+
+**Ограничение админ-маршрутов:** доступ `User.role === admin` **или** email в **`ADMIN_EMAIL_ALLOWLIST`** (env, регистр не важен, разделители запятая/перенос строки). Логика в [`lib/auth/admin-access.ts`](./lib/auth/admin-access.ts): `isAdminUser`, `adminRouteGuard` (401 без сессии, 403 с сессией но не админ), `resolveRoleForOAuth` — не понижать существующего `admin` при логине; allowlist поднимает роль до `admin` при upsert. OAuth upsert: [`lib/auth/upsert-google-user.ts`](./lib/auth/upsert-google-user.ts), [`lib/auth/upsert-github-user.ts`](./lib/auth/upsert-github-user.ts). Env: [`lib/env-parse.ts`](./lib/env-parse.ts), [`.env.example`](./.env.example).
+
+**UI:** [`app/admin/layout.tsx`](./app/admin/layout.tsx) вызывает `forbidden()` (Next `experimental.authInterrupts` в [`next.config.ts`](./next.config.ts)), страница [`app/admin/page.tsx`](./app/admin/page.tsx), [`app/forbidden.tsx`](./app/forbidden.tsx).
+
+**API:** `GET /api/admin/me` → 200 `{ ok: true }` только для админа; `POST /api/admin/workflows` — после guard **501** до TASK-018.
+
+**Проверки в репозитории:** `npm run lint`, `npm run build` — успешно. Ручные `test_steps` из `tasks.json`: пользователь `role=user` — `/admin` и `GET /api/admin/me` отказ; `POST /api/admin/workflows` — 403 с сессией или 401 без; под `admin` или allowlist+логин — успех на `GET /api/admin/me` и 501 на `POST`. В development удобно `POST /api/dev/session` с `userId` двух тестовых пользователей из БД.

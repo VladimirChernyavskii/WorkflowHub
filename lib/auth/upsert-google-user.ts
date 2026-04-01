@@ -1,7 +1,8 @@
 import "server-only";
 
-import { AuthProvider, UserRole } from "@prisma/client";
+import { AuthProvider } from "@prisma/client";
 
+import { resolveRoleForOAuth } from "@/lib/auth/admin-access";
 import type { GoogleUserProfile } from "@/lib/auth/google-oauth";
 import { prisma } from "@/lib/prisma";
 
@@ -10,23 +11,28 @@ import { prisma } from "@/lib/prisma";
  * The same email on Google and GitHub creates two separate accounts; there is no automatic linking.
  */
 export async function upsertGoogleUser(profile: GoogleUserProfile) {
-  return prisma.user.upsert({
-    where: {
-      provider_providerSubject: {
-        provider: AuthProvider.google,
-        providerSubject: profile.sub,
-      },
+  const where = {
+    provider_providerSubject: {
+      provider: AuthProvider.google,
+      providerSubject: profile.sub,
     },
+  } as const;
+  const existing = await prisma.user.findUnique({ where });
+  const role = resolveRoleForOAuth(existing?.role ?? null, profile.email);
+
+  return prisma.user.upsert({
+    where,
     create: {
       provider: AuthProvider.google,
       providerSubject: profile.sub,
       email: profile.email,
       displayName: profile.displayName,
-      role: UserRole.user,
+      role,
     },
     update: {
       ...(profile.email != null ? { email: profile.email } : {}),
       displayName: profile.displayName,
+      role,
     },
   });
 }

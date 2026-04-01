@@ -271,7 +271,7 @@
         "Шаг 3: ожидается отказ доступа; под admin — успех."
       ],
       "dependencies": ["TASK-013", "TASK-014"],
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "TASK-016",

@@ -169,7 +169,7 @@
         "Шаг 3: попытаться создать второй активный Review для того же user+workflow — ожидается ошибка."
       ],
       "dependencies": ["TASK-005", "TASK-006"],
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "TASK-010",

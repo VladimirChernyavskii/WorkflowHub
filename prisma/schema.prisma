@@ -40,6 +40,7 @@ model User {
 
   downloadEvents    DownloadEvent[]
   uniqueDownloads   UniqueDownload[]
+  reviews           Review[]
 
   @@unique([provider, providerSubject])
   @@map("users")
@@ -67,6 +68,7 @@ model Workflow {
   workflowTags    WorkflowTag[]
   downloadEvents  DownloadEvent[]
   uniqueDownloads UniqueDownload[]
+  reviews         Review[]
 
   @@map("workflows")
 }
@@ -144,6 +146,22 @@ model UniqueDownload {
   firstAt      DateTime @default(now()) @map("first_at")
 
   @@map("unique_downloads")
+}
+
+/// PRD §6.8. Uniqueness (workflow_id, user_id) for active rows only — partial unique index in migration SQL.
+model Review {
+  id         String    @id @default(uuid()) @db.Uuid
+  workflowId String    @map("workflow_id") @db.Uuid
+  workflow   Workflow  @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  userId     String    @map("user_id") @db.Uuid
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating     Int
+  body       String?   @db.Text
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+
+  @@map("reviews")
 }
 
 /// Baseline table for migration tooling (TASK-002). Domain models are added in later tasks.

@@ -63,3 +63,11 @@
 Проверка: `npm run db:unique-download-smoke` ([`scripts/unique-download-smoke.ts`](./scripts/unique-download-smoke.ts)) — первая `UniqueDownload` по workflow+user, вторая с теми же ключами → `P2002`; то же для anon; попытка записи с обоими ключами → нарушение CHECK (PostgreSQL `23514`).
 
 **Проверки в репозитории:** `npx prisma validate`, `npm run build`, `npm run lint`, `npm run db:unique-download-smoke` при настроенном `DATABASE_URL`.
+
+## TASK-009 (done)
+
+Добавлена модель **Review** (PRD §6.8) в [`prisma/schema.prisma`](./prisma/schema.prisma): `workflow_id` / `user_id` (FK, `ON DELETE CASCADE`), `rating` (int), опциональный `body` (`TEXT`), `created_at` / `updated_at` / `deleted_at` для soft delete. Составной `@@unique` по `(workflow_id, user_id)` **не** используется: уникальность только среди активных строк — **частичный уникальный индекс** `reviews_workflow_user_active_key` в SQL; ограничение `reviews_rating_range` (`rating` 1–5). Миграция: [`prisma/migrations/20260401063547_add_review`](./prisma/migrations/20260401063547_add_review).
+
+Проверка: `npm run db:review-smoke` ([`scripts/review-smoke.ts`](./scripts/review-smoke.ts)) — отзыв с `rating: 3`, второй активный отзыв для той же пары → `P2002`; после `deleted_at` на первом — вторая активная вставка успешна.
+
+**Проверки в репозитории:** `npx prisma validate`, `npm run build`, `npm run db:review-smoke` при настроенном `DATABASE_URL`.

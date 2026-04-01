@@ -16,6 +16,7 @@
     "db:workflow-smoke": "tsx scripts/workflow-smoke.ts",
     "db:workflow-node-tag-smoke": "tsx scripts/workflow-node-tag-smoke.ts",
     "db:unique-download-smoke": "tsx scripts/unique-download-smoke.ts",
+    "db:review-smoke": "tsx scripts/review-smoke.ts",
     "storage:smoke": "tsx scripts/s3-smoke.ts"
   },
   "dependencies": {

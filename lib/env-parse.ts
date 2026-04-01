@@ -39,6 +39,15 @@ const s3Region = z.preprocess((raw: unknown) => {
   return s === "" ? "us-east-1" : s;
 }, z.string().min(1));
 
+/** Strip trailing slashes; empty → undefined. */
+const optionalOriginUrl = z.preprocess((raw: unknown) => {
+  if (raw === undefined || raw === "") return undefined;
+  let s = String(raw).trim();
+  if (s === "") return undefined;
+  while (s.endsWith("/")) s = s.slice(0, -1);
+  return s;
+}, z.union([z.undefined(), z.string().url()]));
+
 export const envSchema = z
   .object({
     DATABASE_URL: z
@@ -84,6 +93,44 @@ export const envSchema = z
     S3_SECRET_ACCESS_KEY: optionalTrimmed,
     S3_BUCKET: optionalTrimmed,
     S3_FORCE_PATH_STYLE: s3ForcePathStyle,
+
+    /** Public app origin for OAuth redirect_uri (e.g. http://localhost:3000). Required when Google OAuth is enabled. */
+    AUTH_BASE_URL: optionalOriginUrl,
+
+    GOOGLE_CLIENT_ID: optionalTrimmed,
+    GOOGLE_CLIENT_SECRET: optionalTrimmed,
+  })
+  .superRefine((data, ctx) => {
+    const googlePartial =
+      !!data.GOOGLE_CLIENT_ID !== !!data.GOOGLE_CLIENT_SECRET;
+    if (googlePartial) {
+      if (!data.GOOGLE_CLIENT_ID) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "GOOGLE_CLIENT_ID is required when GOOGLE_CLIENT_SECRET is set (Google OAuth)",
+          path: ["GOOGLE_CLIENT_ID"],
+        });
+      }
+      if (!data.GOOGLE_CLIENT_SECRET) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "GOOGLE_CLIENT_SECRET is required when GOOGLE_CLIENT_ID is set (Google OAuth)",
+          path: ["GOOGLE_CLIENT_SECRET"],
+        });
+      }
+    }
+    if (data.GOOGLE_CLIENT_ID && data.GOOGLE_CLIENT_SECRET) {
+      if (!data.AUTH_BASE_URL) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "AUTH_BASE_URL is required when Google OAuth credentials are set (public origin, no trailing slash)",
+          path: ["AUTH_BASE_URL"],
+        });
+      }
+    }
   })
   .superRefine((data, ctx) => {
     if (!data.S3_BUCKET) return;
@@ -132,6 +179,9 @@ export function readProcessEnv() {
     S3_SECRET_ACCESS_KEY: process.env.S3_SECRET_ACCESS_KEY,
     S3_BUCKET: process.env.S3_BUCKET,
     S3_FORCE_PATH_STYLE: process.env.S3_FORCE_PATH_STYLE,
+    AUTH_BASE_URL: process.env.AUTH_BASE_URL,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
   };
 }
 

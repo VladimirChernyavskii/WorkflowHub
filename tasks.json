@@ -237,7 +237,7 @@
         "Шаг 3: проверить в БД, что User создан с provider=google и корректным provider_subject."
       ],
       "dependencies": ["TASK-012"],
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "TASK-014",

@@ -95,3 +95,11 @@
 **Код:** [`lib/session-cookie.ts`](./lib/session-cookie.ts) (`createSessionToken`, `parseSessionToken`, опции cookie), [`lib/prisma.ts`](./lib/prisma.ts), [`lib/get-session-user.ts`](./lib/get-session-user.ts) (`getSessionUser`), dev-only [`app/api/dev/session/route.ts`](./app/api/dev/session/route.ts) (`POST` по `userId` из БД, `DELETE` — сброс; вне development — 404).
 
 **Проверки:** `npm run lint`, `npm run build` с `DATABASE_URL` и `SESSION_SECRET`; ручные шаги из `tasks.json` — `POST /api/dev/session`, DevTools (флаги cookie), перезапуск браузера при ненулевом `maxAge`. Инструкция для curl/README — в [README.md](README.md) раздел «Dev session cookie».
+
+## TASK-013 (done)
+
+Реализован **вход через Google** (OAuth 2.0 / OIDC, PRD §5.7): `GET /api/auth/google` (state в httpOnly cookie `workflowhub_oauth_state`, редирект на Google), `GET /api/auth/google/callback` (проверка state, обмен `code` на токен через `fetch`, userinfo, `upsert` в `users` с `provider=google`, установка `workflowhub_session` через существующий [`lib/session-cookie.ts`](./lib/session-cookie.ts)). Обмен токенов и userinfo без сторонних OAuth-библиотек: [`lib/auth/google-oauth.ts`](./lib/auth/google-oauth.ts); state: [`lib/auth/oauth-state.ts`](./lib/auth/oauth-state.ts); upsert: [`lib/auth/upsert-google-user.ts`](./lib/auth/upsert-google-user.ts). Страница [`app/login/page.tsx`](./app/login/page.tsx) (английский UI), ссылка с главной; ошибки на `/login?error=…` с фиксированными кодами (`oauth_config`, `oauth_state`, `oauth_failed`) без утечки секретов и сырого ответа провайдера.
+
+**Env (опционально до включения входа):** `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `AUTH_BASE_URL` (парная валидация с `AUTH_BASE_URL` при заданных ключах) в [`lib/env-parse.ts`](./lib/env-parse.ts); [`.env.example`](./.env.example), [README.md](README.md).
+
+**Проверки в репозитории:** `npm run lint`, `npm run build` — успешно. Полный цикл из `test_steps` задачи (Google Cloud OAuth client, redirect URI `{AUTH_BASE_URL}/api/auth/google/callback`, ручной flow с `/login`, проверка строки в `users`) выполняется локально при заданных переменных и работающей БД.

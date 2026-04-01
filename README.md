@@ -15,9 +15,11 @@ npm install
 
 Copy [`.env.example`](./.env.example) to `.env` or `.env.local` and set `DATABASE_URL` for your PostgreSQL instance. The app validates environment on load: `DATABASE_URL` and **`SESSION_SECRET`** (32+ characters, server-only signing key for the HTTP-only session cookie) are required; limits from PRD §8 (`MEDIA_*`, `ANON_*`, `DOWNLOAD_*`, `REVIEW_*`) are optional and use [PRD.md](./PRD.md) defaults when unset. Optional **`SESSION_MAX_AGE_DAYS`** (default `30`) controls how long the session cookie remains valid.
 
+**Google sign-in (TASK-013)** is optional for local/CI builds: if you set **`GOOGLE_CLIENT_ID`** and **`GOOGLE_CLIENT_SECRET`**, you must also set **`AUTH_BASE_URL`** to the public origin (no trailing slash), e.g. `http://localhost:3000`. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials), create an OAuth 2.0 Client ID (Web application) and add **Authorized redirect URI**: `{AUTH_BASE_URL}/api/auth/google/callback` (scopes: `openid email profile`). Then open [`/login`](http://localhost:3000/login) and use **Sign in with Google**.
+
 ### Dev session cookie (TASK-012)
 
-Until OAuth is wired (TASK-013), you can attach a session to an existing `users.id` in **development only**:
+You can still attach a session to an existing `users.id` in **development only** (bypass OAuth for testing):
 
 1. Ensure a user row exists (open **`npm run db:studio`** → table `users` → copy a row’s `id`, or insert a test user there).
 2. Run `npm run dev`, then:

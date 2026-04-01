@@ -135,7 +135,7 @@
         "Шаг 3: добавить несколько WorkflowNode с разным sort_order и проверить порядок выборкой."
       ],
       "dependencies": ["TASK-006"],
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "TASK-008",

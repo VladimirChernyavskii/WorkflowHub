@@ -47,3 +47,11 @@
 Проверка: [`scripts/workflow-smoke.ts`](./scripts/workflow-smoke.ts) — `npm run db:workflow-smoke` (создание пары Workflow + WorkflowFile, ожидание `P2002` на второй файл с тем же `workflow_id` и на дубликат `slug`).
 
 **Проверки в репозитории:** `npx prisma validate`, `npm run build`, `npm run db:workflow-smoke` и `npm run db:user-smoke` — успешно при настроенном `DATABASE_URL`.
+
+## TASK-007 (done)
+
+Добавлены **WorkflowNode** (PRD §6.4), **Tag** и **WorkflowTag** (PRD §6.5) в [`prisma/schema.prisma`](./prisma/schema.prisma): enum `WorkflowNodeSource` (`derived`, `admin`); таблица `workflow_nodes` с FK на `workflows` и `ON DELETE CASCADE`; `tags` с уникальным `slug`; `workflow_tags` с составным первичным ключом `(workflow_id, tag_id)` и каскадом при удалении workflow или тега. Миграция: [`prisma/migrations/20260401061632_add_workflow_node_tag`](./prisma/migrations/20260401061632_add_workflow_node_tag).
+
+Проверка: `npm run db:workflow-node-tag-smoke` ([`scripts/workflow-node-tag-smoke.ts`](./scripts/workflow-node-tag-smoke.ts)) — создание Tag, связи WorkflowTag, три `WorkflowNode` с разным `sort_order`, выборка `ORDER BY sort_order asc`, ожидание `P2002` на дубликат пары workflow+tag; затем очистка тестовых строк.
+
+**Проверки в репозитории:** `npx prisma validate`, `npm run db:workflow-node-tag-smoke` при настроенном `DATABASE_URL` (локальный PostgreSQL или облако, без Docker).

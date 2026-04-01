@@ -38,6 +38,9 @@ model User {
   role            UserRole
   createdAt       DateTime     @default(now()) @map("created_at")
 
+  downloadEvents    DownloadEvent[]
+  uniqueDownloads   UniqueDownload[]
+
   @@unique([provider, providerSubject])
   @@map("users")
 }
@@ -59,9 +62,11 @@ model Workflow {
   updatedAt           DateTime       @updatedAt @map("updated_at")
   publishedAt         DateTime?      @map("published_at")
 
-  currentFile   WorkflowFile?
-  nodes         WorkflowNode[]
-  workflowTags  WorkflowTag[]
+  currentFile     WorkflowFile?
+  nodes           WorkflowNode[]
+  workflowTags    WorkflowTag[]
+  downloadEvents  DownloadEvent[]
+  uniqueDownloads UniqueDownload[]
 
   @@map("workflows")
 }
@@ -111,6 +116,34 @@ model WorkflowTag {
 
   @@id([workflowId, tagId])
   @@map("workflow_tags")
+}
+
+/// PRD §6.6. Raw download requests for admin diagnostics.
+model DownloadEvent {
+  id            String   @id @default(uuid()) @db.Uuid
+  workflowId    String   @map("workflow_id") @db.Uuid
+  workflow      Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  userId        String?  @map("user_id") @db.Uuid
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  anonDeviceId  String?  @map("anon_device_id")
+  ipHash        String   @map("ip_hash")
+  occurredAt    DateTime @default(now()) @map("occurred_at")
+  countedUnique Boolean  @map("counted_unique")
+
+  @@map("download_events")
+}
+
+/// PRD §6.7. At most one row per (workflow, user) or per (workflow, anon_device) for non-null keys — enforced by partial unique indexes in migration SQL.
+model UniqueDownload {
+  id           String   @id @default(uuid()) @db.Uuid
+  workflowId   String   @map("workflow_id") @db.Uuid
+  workflow     Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  userId       String?  @map("user_id") @db.Uuid
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  anonDeviceId String?  @map("anon_device_id")
+  firstAt      DateTime @default(now()) @map("first_at")
+
+  @@map("unique_downloads")
 }
 
 /// Baseline table for migration tooling (TASK-002). Domain models are added in later tasks.

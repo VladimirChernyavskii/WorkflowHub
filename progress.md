@@ -55,3 +55,11 @@
 Проверка: `npm run db:workflow-node-tag-smoke` ([`scripts/workflow-node-tag-smoke.ts`](./scripts/workflow-node-tag-smoke.ts)) — создание Tag, связи WorkflowTag, три `WorkflowNode` с разным `sort_order`, выборка `ORDER BY sort_order asc`, ожидание `P2002` на дубликат пары workflow+tag; затем очистка тестовых строк.
 
 **Проверки в репозитории:** `npx prisma validate`, `npm run db:workflow-node-tag-smoke` при настроенном `DATABASE_URL` (локальный PostgreSQL или облако, без Docker).
+
+## TASK-008 (done)
+
+Добавлены **DownloadEvent** (PRD §6.6) и **UniqueDownload** (PRD §6.7) в [`prisma/schema.prisma`](./prisma/schema.prisma): таблицы `download_events` (FK на `workflows` `ON DELETE CASCADE`, на `users` `ON DELETE SET NULL`, поля `ip_hash`, `occurred_at`, `counted_unique` и пр.) и `unique_downloads` (FK аналогично, `first_at`). Уникальность «одна строка на пару (workflow, user) при ненулевом user» и «на (workflow, anon_device_id) при ненулевом anon» задана **частичными уникальными индексами** в SQL; добавлен `CHECK` `unique_downloads_user_xor_anon` — ровно одно из `user_id` / `anon_device_id` не NULL. Миграция: [`prisma/migrations/20260401062522_add_download_event_unique_download`](./prisma/migrations/20260401062522_add_download_event_unique_download).
+
+Проверка: `npm run db:unique-download-smoke` ([`scripts/unique-download-smoke.ts`](./scripts/unique-download-smoke.ts)) — первая `UniqueDownload` по workflow+user, вторая с теми же ключами → `P2002`; то же для anon; попытка записи с обоими ключами → нарушение CHECK (PostgreSQL `23514`).
+
+**Проверки в репозитории:** `npx prisma validate`, `npm run build`, `npm run lint`, `npm run db:unique-download-smoke` при настроенном `DATABASE_URL`.

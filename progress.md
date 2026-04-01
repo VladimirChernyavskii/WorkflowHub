@@ -71,3 +71,11 @@
 Проверка: `npm run db:review-smoke` ([`scripts/review-smoke.ts`](./scripts/review-smoke.ts)) — отзыв с `rating: 3`, второй активный отзыв для той же пары → `P2002`; после `deleted_at` на первом — вторая активная вставка успешна.
 
 **Проверки в репозитории:** `npx prisma validate`, `npm run build`, `npm run db:review-smoke` при настроенном `DATABASE_URL`.
+
+## TASK-010 (done)
+
+Добавлена модель **MediaAsset** (PRD §6.9) в [`prisma/schema.prisma`](./prisma/schema.prisma): enum `MediaAssetKind` (`image`, `video`), `MediaAssetRole` (`input_example`, `output_example`); поля `storage_key`, `byte_size`, `mime_type`, `sort_order`; обязательный FK `workflow_id` на `workflows` с **`ON DELETE CASCADE`** (лимиты по количеству на `(workflow_id, role, kind)` — в приложении, отдельная задача). Таблица `media_assets`. Миграция: [`prisma/migrations/20260401064508_add_media_asset`](./prisma/migrations/20260401064508_add_media_asset).
+
+Проверка: `npm run db:media-asset-smoke` ([`scripts/media-asset-smoke.ts`](./scripts/media-asset-smoke.ts)) — вставка `MediaAsset` для тестового workflow, затем удаление workflow и проверка, что строки в `media_assets` не остались.
+
+**Проверки в репозитории:** `npx prisma validate`, `npm run db:media-asset-smoke` при настроенном `DATABASE_URL`.

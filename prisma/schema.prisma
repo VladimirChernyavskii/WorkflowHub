@@ -28,6 +28,16 @@ enum WorkflowNodeSource {
   admin
 }
 
+enum MediaAssetKind {
+  image
+  video
+}
+
+enum MediaAssetRole {
+  input_example
+  output_example
+}
+
 /// PRD §6.1
 model User {
   id              String       @id @default(uuid()) @db.Uuid
@@ -69,6 +79,7 @@ model Workflow {
   downloadEvents  DownloadEvent[]
   uniqueDownloads UniqueDownload[]
   reviews         Review[]
+  mediaAssets     MediaAsset[]
 
   @@map("workflows")
 }
@@ -162,6 +173,21 @@ model Review {
   deletedAt  DateTime? @map("deleted_at")
 
   @@map("reviews")
+}
+
+/// PRD §6.9. Max counts per (workflow_id, role, kind) are enforced in application code. ON DELETE CASCADE removes rows when the workflow is deleted.
+model MediaAsset {
+  id          String         @id @default(uuid()) @db.Uuid
+  workflowId  String         @map("workflow_id") @db.Uuid
+  workflow    Workflow       @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  kind        MediaAssetKind
+  role        MediaAssetRole
+  storageKey  String         @map("storage_key")
+  byteSize    Int            @map("byte_size")
+  mimeType    String         @map("mime_type")
+  sortOrder   Int            @map("sort_order")
+
+  @@map("media_assets")
 }
 
 /// Baseline table for migration tooling (TASK-002). Domain models are added in later tasks.

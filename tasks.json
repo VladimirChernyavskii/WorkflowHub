@@ -186,7 +186,7 @@
         "Шаг 3: убедиться, что удаление workflow каскадом или политика ON DELETE задокументирована и работает."
       ],
       "dependencies": ["TASK-006"],
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "TASK-011",

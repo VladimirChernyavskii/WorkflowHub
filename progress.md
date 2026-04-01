@@ -103,3 +103,13 @@
 **Env (опционально до включения входа):** `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `AUTH_BASE_URL` (парная валидация с `AUTH_BASE_URL` при заданных ключах) в [`lib/env-parse.ts`](./lib/env-parse.ts); [`.env.example`](./.env.example), [README.md](README.md).
 
 **Проверки в репозитории:** `npm run lint`, `npm run build` — успешно. Полный цикл из `test_steps` задачи (Google Cloud OAuth client, redirect URI `{AUTH_BASE_URL}/api/auth/google/callback`, ручной flow с `/login`, проверка строки в `users`) выполняется локально при заданных переменных и работающей БД.
+
+## TASK-014 (done)
+
+Реализован **вход через GitHub** по тому же паттерну, что Google: [`lib/auth/github-oauth.ts`](./lib/auth/github-oauth.ts) (authorize, token JSON, `/user` + при необходимости `/user/emails`, стабильный `provider_subject` = `String(github.id)`), [`lib/auth/upsert-github-user.ts`](./lib/auth/upsert-github-user.ts), `GET /api/auth/github` и `GET /api/auth/github/callback` ([`app/api/auth/github/`](./app/api/auth/github/)). Политика учёток: в JSDoc у upsert Google/GitHub — одна и та же почта у разных провайдеров даёт **две отдельные** строки `users`, без автолинковки.
+
+**Env:** `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` (парная валидация); при включённом Google и/или GitHub обязателен `AUTH_BASE_URL` — см. [`lib/env-parse.ts`](./lib/env-parse.ts), [`.env.example`](./.env.example). Callback GitHub: `{AUTH_BASE_URL}/api/auth/github/callback`, scopes `read:user user:email`.
+
+**UI:** [`app/login/page.tsx`](./app/login/page.tsx) — кнопки Google и/или GitHub в зависимости от конфигурации.
+
+**Проверки в репозитории:** `npm run lint`, `npm run build` — успешно. Полный цикл из `test_steps` задачи (OAuth App на GitHub, redirect flow, строка в `users` с `provider=github`) — вручную при заданных `GITHUB_*`, `AUTH_BASE_URL` и работающей БД.

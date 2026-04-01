@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { isGitHubOAuthConfigured } from "@/lib/auth/github-oauth";
 import { isGoogleOAuthConfigured } from "@/lib/auth/google-oauth";
 import { env } from "@/lib/env";
 
@@ -18,6 +19,8 @@ type PageProps = {
 export default async function LoginPage({ searchParams }: PageProps) {
   const q = await searchParams;
   const googleOk = isGoogleOAuthConfigured(env);
+  const githubOk = isGitHubOAuthConfigured(env);
+  const anyOAuth = googleOk || githubOk;
   const err = q.error;
   const errorMessage =
     err && ERROR_COPY[err]
@@ -31,7 +34,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
       <div className="text-center">
         <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
         <p className="mt-2 text-neutral-600 dark:text-neutral-400">
-          Continue with your Google account.
+          Continue with Google or GitHub.
         </p>
       </div>
       {errorMessage ? (
@@ -42,16 +45,28 @@ export default async function LoginPage({ searchParams }: PageProps) {
           {errorMessage}
         </p>
       ) : null}
-      {googleOk ? (
-        <a
-          href="/api/auth/google"
-          className="rounded-md bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100"
-        >
-          Sign in with Google
-        </a>
+      {anyOAuth ? (
+        <div className="flex flex-col items-center gap-3">
+          {googleOk ? (
+            <a
+              href="/api/auth/google"
+              className="rounded-md bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100"
+            >
+              Sign in with Google
+            </a>
+          ) : null}
+          {githubOk ? (
+            <a
+              href="/api/auth/github"
+              className="rounded-md border border-neutral-300 bg-white px-4 py-2.5 text-sm font-medium text-neutral-900 shadow-sm transition hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:bg-neutral-800"
+            >
+              Sign in with GitHub
+            </a>
+          ) : null}
+        </div>
       ) : (
         <p className="max-w-md text-center text-sm text-neutral-600 dark:text-neutral-400">
-          Google sign-in is not available on this deployment.
+          Sign-in is not available on this deployment.
         </p>
       )}
       <Link

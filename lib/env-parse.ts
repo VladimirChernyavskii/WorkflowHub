@@ -94,11 +94,14 @@ export const envSchema = z
     S3_BUCKET: optionalTrimmed,
     S3_FORCE_PATH_STYLE: s3ForcePathStyle,
 
-    /** Public app origin for OAuth redirect_uri (e.g. http://localhost:3000). Required when Google OAuth is enabled. */
+    /** Public app origin for OAuth redirect_uri (e.g. http://localhost:3000). Required when any OAuth provider is enabled. */
     AUTH_BASE_URL: optionalOriginUrl,
 
     GOOGLE_CLIENT_ID: optionalTrimmed,
     GOOGLE_CLIENT_SECRET: optionalTrimmed,
+
+    GITHUB_CLIENT_ID: optionalTrimmed,
+    GITHUB_CLIENT_SECRET: optionalTrimmed,
   })
   .superRefine((data, ctx) => {
     const googlePartial =
@@ -121,15 +124,35 @@ export const envSchema = z
         });
       }
     }
-    if (data.GOOGLE_CLIENT_ID && data.GOOGLE_CLIENT_SECRET) {
-      if (!data.AUTH_BASE_URL) {
+    const githubPartial =
+      !!data.GITHUB_CLIENT_ID !== !!data.GITHUB_CLIENT_SECRET;
+    if (githubPartial) {
+      if (!data.GITHUB_CLIENT_ID) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message:
-            "AUTH_BASE_URL is required when Google OAuth credentials are set (public origin, no trailing slash)",
-          path: ["AUTH_BASE_URL"],
+            "GITHUB_CLIENT_ID is required when GITHUB_CLIENT_SECRET is set (GitHub OAuth)",
+          path: ["GITHUB_CLIENT_ID"],
         });
       }
+      if (!data.GITHUB_CLIENT_SECRET) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            "GITHUB_CLIENT_SECRET is required when GITHUB_CLIENT_ID is set (GitHub OAuth)",
+          path: ["GITHUB_CLIENT_SECRET"],
+        });
+      }
+    }
+    const googleOn = !!(data.GOOGLE_CLIENT_ID && data.GOOGLE_CLIENT_SECRET);
+    const githubOn = !!(data.GITHUB_CLIENT_ID && data.GITHUB_CLIENT_SECRET);
+    if ((googleOn || githubOn) && !data.AUTH_BASE_URL) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "AUTH_BASE_URL is required when OAuth credentials are set (public origin, no trailing slash)",
+        path: ["AUTH_BASE_URL"],
+      });
     }
   })
   .superRefine((data, ctx) => {
@@ -182,6 +205,8 @@ export function readProcessEnv() {
     AUTH_BASE_URL: process.env.AUTH_BASE_URL,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+    GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
+    GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
   };
 }
 

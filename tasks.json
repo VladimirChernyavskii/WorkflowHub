@@ -254,7 +254,7 @@
         "Шаг 3: проверить сессию и запись User в БД."
       ],
       "dependencies": ["TASK-012"],
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "TASK-015",

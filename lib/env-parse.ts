@@ -65,6 +65,19 @@ export const envSchema = z
     ),
     REVIEW_BODY_MAX_CHARS: envPositiveInt("REVIEW_BODY_MAX_CHARS", 2000),
 
+    /** HMAC key for signed session cookie (server-only). Min length reduces guessability. */
+    SESSION_SECRET: z.preprocess((raw: unknown) => {
+      if (raw === undefined || raw === "") return undefined;
+      const s = String(raw).trim();
+      return s === "" ? undefined : s;
+    }, z.string().min(32, {
+      message:
+        "SESSION_SECRET is required and must be at least 32 characters (signing HTTP-only session cookies)",
+    })),
+
+    /** Session cookie lifetime; PRD §5.7 — session until expiry. */
+    SESSION_MAX_AGE_DAYS: envPositiveInt("SESSION_MAX_AGE_DAYS", 30),
+
     S3_ENDPOINT: optionalTrimmed,
     S3_REGION: s3Region,
     S3_ACCESS_KEY_ID: optionalTrimmed,
@@ -111,6 +124,8 @@ export function readProcessEnv() {
     DOWNLOAD_RATE_LIMIT_PER_IP_PER_MIN:
       process.env.DOWNLOAD_RATE_LIMIT_PER_IP_PER_MIN,
     REVIEW_BODY_MAX_CHARS: process.env.REVIEW_BODY_MAX_CHARS,
+    SESSION_SECRET: process.env.SESSION_SECRET,
+    SESSION_MAX_AGE_DAYS: process.env.SESSION_MAX_AGE_DAYS,
     S3_ENDPOINT: process.env.S3_ENDPOINT,
     S3_REGION: process.env.S3_REGION,
     S3_ACCESS_KEY_ID: process.env.S3_ACCESS_KEY_ID,

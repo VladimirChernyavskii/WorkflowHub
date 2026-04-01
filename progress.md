@@ -87,3 +87,11 @@
 Проверка: `npm run db:admin-audit-log-smoke` ([`scripts/admin-audit-log-smoke.ts`](./scripts/admin-audit-log-smoke.ts)) — вставка аудита для тестового admin-пользователя, выборка по `id`, ожидание `P2003` при несуществующем `admin_user_id`.
 
 **Проверки в репозитории:** `npx prisma validate`, `npm run lint`, `npm run build`, `npm run db:admin-audit-log-smoke` при настроенном `DATABASE_URL`.
+
+## TASK-012 (done)
+
+Реализована **базовая сессия**, привязанная к `User`: подписанный HMAC-SHA256 токен в cookie `workflowhub_session` с **`httpOnly`**, **`SameSite=Lax`**, **`Secure`** только при `NODE_ENV === "production"` (на HTTP в dev флаг не ставится — см. JSDoc в [`lib/session-cookie.ts`](./lib/session-cookie.ts)). Env: обязательный **`SESSION_SECRET`** (≥32 символа), опциональный **`SESSION_MAX_AGE_DAYS`** (дефолт 30) в [`lib/env-parse.ts`](./lib/env-parse.ts); [`.env.example`](./.env.example) обновлён.
+
+**Код:** [`lib/session-cookie.ts`](./lib/session-cookie.ts) (`createSessionToken`, `parseSessionToken`, опции cookie), [`lib/prisma.ts`](./lib/prisma.ts), [`lib/get-session-user.ts`](./lib/get-session-user.ts) (`getSessionUser`), dev-only [`app/api/dev/session/route.ts`](./app/api/dev/session/route.ts) (`POST` по `userId` из БД, `DELETE` — сброс; вне development — 404).
+
+**Проверки:** `npm run lint`, `npm run build` с `DATABASE_URL` и `SESSION_SECRET`; ручные шаги из `tasks.json` — `POST /api/dev/session`, DevTools (флаги cookie), перезапуск браузера при ненулевом `maxAge`. Инструкция для curl/README — в [README.md](README.md) раздел «Dev session cookie».

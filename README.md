@@ -13,7 +13,23 @@ ComfyUI workflow catalog (see [PRD.md](./PRD.md)).
 npm install
 ```
 
-Copy [`.env.example`](./.env.example) to `.env` or `.env.local` and set `DATABASE_URL` for your PostgreSQL instance. The app validates environment on load: `DATABASE_URL` must be set; limits from PRD §8 (`MEDIA_*`, `ANON_*`, `DOWNLOAD_*`, `REVIEW_*`) are optional and use [PRD.md](./PRD.md) defaults when unset.
+Copy [`.env.example`](./.env.example) to `.env` or `.env.local` and set `DATABASE_URL` for your PostgreSQL instance. The app validates environment on load: `DATABASE_URL` and **`SESSION_SECRET`** (32+ characters, server-only signing key for the HTTP-only session cookie) are required; limits from PRD §8 (`MEDIA_*`, `ANON_*`, `DOWNLOAD_*`, `REVIEW_*`) are optional and use [PRD.md](./PRD.md) defaults when unset. Optional **`SESSION_MAX_AGE_DAYS`** (default `30`) controls how long the session cookie remains valid.
+
+### Dev session cookie (TASK-012)
+
+Until OAuth is wired (TASK-013), you can attach a session to an existing `users.id` in **development only**:
+
+1. Ensure a user row exists (open **`npm run db:studio`** → table `users` → copy a row’s `id`, or insert a test user there).
+2. Run `npm run dev`, then:
+
+```bash
+curl -s -X POST http://localhost:3000/api/dev/session -H "Content-Type: application/json" -d "{\"userId\":\"PASTE-UUID-HERE\"}"
+```
+
+3. Repeat the request with `curl -c cookies.txt` and inspect the file, or open the site in a browser (same origin) after a client-side `fetch` with `credentials: "include"`, then in DevTools → Application → Cookies verify **`HttpOnly`**, **`SameSite=Lax`**, and **`Secure` absent** on local HTTP (in production over HTTPS, `Secure` is set — see JSDoc in [`lib/session-cookie.ts`](./lib/session-cookie.ts)).
+4. Clear the session: `curl -s -X DELETE http://localhost:3000/api/dev/session` (with the same cookie jar if using curl).
+
+The route **`POST|DELETE /api/dev/session`** returns **404** when `NODE_ENV` is not `development`.
 
 To run PostgreSQL locally with Docker:
 

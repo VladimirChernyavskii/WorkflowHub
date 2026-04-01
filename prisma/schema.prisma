@@ -23,6 +23,11 @@ enum WorkflowStatus {
   archived
 }
 
+enum WorkflowNodeSource {
+  derived
+  admin
+}
+
 /// PRD §6.1
 model User {
   id              String       @id @default(uuid()) @db.Uuid
@@ -54,7 +59,9 @@ model Workflow {
   updatedAt           DateTime       @updatedAt @map("updated_at")
   publishedAt         DateTime?      @map("published_at")
 
-  currentFile WorkflowFile?
+  currentFile   WorkflowFile?
+  nodes         WorkflowNode[]
+  workflowTags  WorkflowTag[]
 
   @@map("workflows")
 }
@@ -71,6 +78,39 @@ model WorkflowFile {
   uploadedAt  DateTime @default(now()) @map("uploaded_at")
 
   @@map("workflow_files")
+}
+
+/// PRD §6.4. v1: final ordered display list after each parse/admin save.
+model WorkflowNode {
+  id         String              @id @default(uuid()) @db.Uuid
+  workflowId String              @map("workflow_id") @db.Uuid
+  workflow   Workflow            @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  nodeType   String              @map("node_type")
+  sortOrder  Int                 @map("sort_order")
+  source     WorkflowNodeSource
+
+  @@map("workflow_nodes")
+}
+
+/// PRD §6.5
+model Tag {
+  id           String         @id @default(uuid()) @db.Uuid
+  slug         String         @unique
+  name         String
+  workflowTags WorkflowTag[]
+
+  @@map("tags")
+}
+
+/// PRD §6.5. Composite PK = unique (workflow_id, tag_id). CASCADE cleans links when workflow or tag is removed.
+model WorkflowTag {
+  workflowId String   @map("workflow_id") @db.Uuid
+  tagId      String   @map("tag_id") @db.Uuid
+  workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([workflowId, tagId])
+  @@map("workflow_tags")
 }
 
 /// Baseline table for migration tooling (TASK-002). Domain models are added in later tasks.

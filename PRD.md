@@ -502,10 +502,11 @@ All values **must be environment-configurable** without code change.
 
 ## 14. Open decisions for engineering spike
 
-1. Full-text search: PostgreSQL `tsvector` vs hosted search (Meilisearch, Algolia) vs simple `ILIKE` for v1.  
-2. Exact ComfyUI JSON parser strategy (support multiple export formats if needed).  
-3. Whether guest download still sets `anon_device_id` on first visit vs first download attempt.  
-4. Soft-delete vs hard-delete for admin-removed reviews in public API responses.
+1. **Resolved (v1):** Catalog keyword search uses **case-insensitive substring match** on `workflows.title` and `workflows.description` via Prisma (`contains` + `insensitive` mode on PostgreSQL, equivalent to parameterized `ILIKE '%q%'`). No `tsvector`/GIN and no external search engine for v1. Public API: optional query parameter **`q`** on `GET /api/workflows` — omitted or whitespace-only after trim applies **no** text filter (full published list under pagination); non-empty `q` restricts to published rows matching title or description.  
+2. **Resolved (v1):** Catalog filters (PRD §5.1) on `GET /api/workflows`: repeatable **`tag`** by tag **slug**; workflow must satisfy **all** tags (**AND**). Optional **`base_model`** and **`comfy_version`** — exact match on stored columns. Filters, including multiple `tag` values, combine with **`q`** by **AND**. **Unknown tag slug:** empty list (`total: 0`), not HTTP 404. Enforced limits: ≤20 `tag` params, slug length ≤100; `base_model` / `comfy_version` length ≤200; violations → **400** with `issues`.  
+3. Exact ComfyUI JSON parser strategy (support multiple export formats if needed).  
+4. Whether guest download still sets `anon_device_id` on first visit vs first download attempt.  
+5. Soft-delete vs hard-delete for admin-removed reviews in public API responses.
 
 ---
 

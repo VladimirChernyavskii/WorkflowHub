@@ -1,7 +1,8 @@
 import "server-only";
 
-import { Prisma, WorkflowStatus } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
+import { buildPublishedCatalogWhere } from "@/lib/catalog/published-catalog-where";
 import { prisma } from "@/lib/prisma";
 
 /** Tags only; no `currentFile` / nodes — public catalog list (TASK-020). */
@@ -42,8 +43,21 @@ export function serializePublicWorkflowSummary(w: WorkflowPublicListRow) {
 export async function listPublishedWorkflows(params: {
   skip: number;
   take: number;
+  /** Non-empty substring; case-insensitive match on title or description (TASK-021). */
+  searchQuery?: string;
+  /** Tag slugs; AND semantics (TASK-022). */
+  tagSlugs?: string[];
+  /** Exact `base_model` filter (TASK-022). */
+  baseModel?: string;
+  /** Exact `comfy_version` filter (TASK-022). */
+  comfyVersion?: string;
 }): Promise<{ rows: WorkflowPublicListRow[]; total: number }> {
-  const where = { status: WorkflowStatus.published };
+  const where = buildPublishedCatalogWhere({
+    searchQuery: params.searchQuery,
+    tagSlugs: params.tagSlugs,
+    baseModel: params.baseModel,
+    comfyVersion: params.comfyVersion,
+  });
 
   const [rows, total] = await Promise.all([
     prisma.workflow.findMany({

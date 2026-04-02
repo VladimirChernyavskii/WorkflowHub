@@ -169,3 +169,19 @@
 **API:** `GET` [`app/api/workflows/route.ts`](./app/api/workflows/route.ts) — без сессии; query `page` (default 1), `pageSize` (default 20, max 100), невалидные значения → **400** с `issues`; тело `{ workflows, page, pageSize, total }`.
 
 **Проверки в репозитории:** `npm run lint`, `npm run build` — успешно. Ручные `test_steps` из `tasks.json`: в БД есть published и draft → `curl` без cookie на `GET /api/workflows` (и при ≥2 published — `?page=2&pageSize=1`): в массиве только опубликованные записи, `total` согласован с пагинацией.
+
+## TASK-021 (done)
+
+**Поиск по каталогу** (title / description, PRD §14 п.1): решение зафиксировано в [PRD.md](./PRD.md) §14 — v1 без `tsvector` и без внешнего поиска; подстроковый регистронезависимый матч через Prisma (`contains` + `insensitive`) на `title` и `description` с `OR`. Общее условие вынесено в [`lib/catalog/published-catalog-where.ts`](./lib/catalog/published-catalog-where.ts) (`buildPublishedCatalogWhere`); [`lib/catalog/workflow-list.ts`](./lib/catalog/workflow-list.ts) — `listPublishedWorkflows({ …, searchQuery? })`, один `where` для `findMany` и `count`.
+
+**API:** `GET` [`app/api/workflows/route.ts`](./app/api/workflows/route.ts) — опциональный query **`q`** (max 200 символов после trim по длине исходной строки Zod), пустой/пробелы → без текстового фильтра. Кратко в [README.md](./README.md) (раздел Public catalog API).
+
+**Проверки в репозитории:** `npm run lint`, `npm run build` — успешно. `npm run db:catalog-search-smoke` ([`scripts/catalog-search-smoke.ts`](./scripts/catalog-search-smoke.ts)) — два published, поиск по уникальному токену в title (только первый), по токену в description (только второй), без `q` оба в выборке; затем удаление тестовых строк. Ручные `test_steps` из `tasks.json`: `curl` с `?q=…` на запущенный dev.
+
+## TASK-022 (done)
+
+**Фильтры каталога** (PRD §5.1): [`lib/catalog/published-catalog-where.ts`](./lib/catalog/published-catalog-where.ts) — `buildPublishedCatalogWhere({ searchQuery?, tagSlugs?, baseModel?, comfyVersion? })`; для каждого slug тега условие `workflowTags.some(tag.slug)`; несколько тегов и остальные поля объединяются через **AND** вместе с блоком поиска по `q`. [`lib/catalog/workflow-list.ts`](./lib/catalog/workflow-list.ts) прокидывает те же поля в один `where` для `findMany` и `count`.
+
+**API:** `GET` [`app/api/workflows/route.ts`](./app/api/workflows/route.ts) — `url.searchParams.getAll("tag")` (не `Object.fromEntries`), опциональные `base_model`, `comfy_version`; лимиты и **400**/`issues` при нарушении. Несуществующий slug тега → пустая выдача; зафиксировано в [README.md](./README.md) и [PRD.md](./PRD.md) §14 п.2.
+
+**Проверки в репозитории:** `npm run lint`, `npm run build` — успешно. `npm run db:catalog-filters-smoke` ([`scripts/catalog-filters-smoke.ts`](./scripts/catalog-filters-smoke.ts)) — пересекающиеся теги, разные `base_model`/`comfy_version`, проверка одного и двух тегов, неизвестный тег, AND с `q`. Ручные `test_steps`: `curl` с `?tag=…&base_model=…` на dev.

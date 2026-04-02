@@ -373,7 +373,7 @@
         "Шаг 3: убедиться, что второй не в результатах."
       ],
       "dependencies": ["TASK-020"],
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "TASK-022",
@@ -390,7 +390,7 @@
         "Шаг 3: сравнить количество записей с ожидаемым."
       ],
       "dependencies": ["TASK-020"],
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "TASK-023",

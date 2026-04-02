@@ -1,0 +1,197 @@
+import { PrismaClient } from "@prisma/client";
+import { config } from "dotenv";
+import { resolve } from "node:path";
+
+import { buildPublishedCatalogWhere } from "../lib/catalog/published-catalog-where";
+
+config({ path: resolve(process.cwd(), ".env") });
+config({ path: resolve(process.cwd(), ".env.local"), override: true });
+
+async function countMatching(
+  prisma: PrismaClient,
+  params: Parameters<typeof buildPublishedCatalogWhere>[0]
+) {
+  const where = buildPublishedCatalogWhere(params);
+  const rows = await prisma.workflow.findMany({
+    where,
+    select: { id: true },
+  });
+  const total = await prisma.workflow.count({ where });
+  return { ids: new Set(rows.map((r) => r.id)), total };
+}
+
+async function main() {
+  if (!process.env.DATABASE_URL?.trim()) {
+    console.error(
+      "[workflowhub] catalog-filters-smoke: set DATABASE_URL (.env / .env.local)"
+    );
+    process.exit(1);
+  }
+
+  const prisma = new PrismaClient();
+  const suffix = `${Date.now()}`;
+  const slugT1 = `cat_filt_t1_${suffix}`;
+  const slugT2 = `cat_filt_t2_${suffix}`;
+  const wfSlug1 = `cat_filt_w1_${suffix}`;
+  const wfSlug2 = `cat_filt_w2_${suffix}`;
+  const wfSlug3 = `cat_filt_w3_${suffix}`;
+
+  try {
+    const tag1 = await prisma.tag.create({
+      data: { slug: slugT1, name: "Cat filter T1" },
+    });
+    const tag2 = await prisma.tag.create({
+      data: { slug: slugT2, name: "Cat filter T2" },
+    });
+
+    const pub = {
+      status: "published" as const,
+      authorDisplayName: "smoke",
+      publishedAt: new Date(),
+    };
+
+    const w1 = await prisma.workflow.create({
+      data: {
+        slug: wfSlug1,
+        title: "Cat filter W1",
+        description: "d1",
+        ...pub,
+        baseModel: "SDXL",
+        comfyVersion: "1.0",
+      },
+    });
+    const w2 = await prisma.workflow.create({
+      data: {
+        slug: wfSlug2,
+        title: "Cat filter W2",
+        description: "d2",
+        ...pub,
+        baseModel: "Flux",
+        comfyVersion: "2.0",
+      },
+    });
+    const w3 = await prisma.workflow.create({
+      data: {
+        slug: wfSlug3,
+        title: "Cat filter W3",
+        description: "d3",
+        ...pub,
+        baseModel: "SDXL",
+        comfyVersion: "1.0",
+      },
+    });
+    await prisma.workflowTag.create({
+      data: { workflowId: w1.id, tagId: tag1.id },
+    });
+    await prisma.workflowTag.createMany({
+      data: [
+        { workflowId: w2.id, tagId: tag1.id },
+        { workflowId: w2.id, tagId: tag2.id },
+      ],
+    });
+    await prisma.workflowTag.create({
+      data: { workflowId: w3.id, tagId: tag2.id },
+    });
+
+    const oneTag = await countMatching(prisma, { tagSlugs: [slugT1] });
+    if (
+      oneTag.total !== 2 ||
+      !oneTag.ids.has(w1.id) ||
+      !oneTag.ids.has(w2.id) ||
+      oneTag.ids.has(w3.id)
+    ) {
+      console.error(
+        "[workflowhub] catalog-filters-smoke: expected two workflows for single tag",
+        oneTag
+      );
+      process.exit(1);
+    }
+
+    const twoTags = await countMatching(prisma, {
+      tagSlugs: [slugT1, slugT2],
+    });
+    if (twoTags.total !== 1 || !twoTags.ids.has(w2.id)) {
+      console.error(
+        "[workflowhub] catalog-filters-smoke: expected only W2 for two tags (AND)",
+        twoTags
+      );
+      process.exit(1);
+    }
+
+    if (oneTag.total < twoTags.total) {
+      console.error(
+        "[workflowhub] catalog-filters-smoke: single-tag count should be >= two-tag count"
+      );
+      process.exit(1);
+    }
+
+    const unknownTag = await countMatching(prisma, {
+      tagSlugs: [`cat_filt_missing_${suffix}`],
+    });
+    if (unknownTag.total !== 0) {
+      console.error(
+        "[workflowhub] catalog-filters-smoke: unknown tag should yield empty list",
+        unknownTag
+      );
+      process.exit(1);
+    }
+
+    const fluxOnly = await countMatching(prisma, { baseModel: "Flux" });
+    if (fluxOnly.total !== 1 || !fluxOnly.ids.has(w2.id)) {
+      console.error(
+        "[workflowhub] catalog-filters-smoke: base_model=Flux mismatch",
+        fluxOnly
+      );
+      process.exit(1);
+    }
+
+    const comfy20 = await countMatching(prisma, { comfyVersion: "2.0" });
+    if (comfy20.total !== 1 || !comfy20.ids.has(w2.id)) {
+      console.error(
+        "[workflowhub] catalog-filters-smoke: comfy_version=2.0 mismatch",
+        comfy20
+      );
+      process.exit(1);
+    }
+
+    const andMeta = await countMatching(prisma, {
+      tagSlugs: [slugT2],
+      baseModel: "SDXL",
+    });
+    if (andMeta.total !== 1 || !andMeta.ids.has(w3.id)) {
+      console.error(
+        "[workflowhub] catalog-filters-smoke: tag2 + SDXL should be W3 only",
+        andMeta
+      );
+      process.exit(1);
+    }
+
+    const tripleAnd = await countMatching(prisma, {
+      searchQuery: "Cat filter",
+      tagSlugs: [slugT1],
+      baseModel: "Flux",
+    });
+    if (tripleAnd.total !== 1 || !tripleAnd.ids.has(w2.id)) {
+      console.error(
+        "[workflowhub] catalog-filters-smoke: q + tag + base_model AND failed",
+        tripleAnd
+      );
+      process.exit(1);
+    }
+
+    console.log("[workflowhub] catalog-filters-smoke OK");
+  } finally {
+    await prisma.workflow.deleteMany({
+      where: { slug: { in: [wfSlug1, wfSlug2, wfSlug3] } },
+    });
+    await prisma.tag.deleteMany({
+      where: { slug: { in: [slugT1, slugT2] } },
+    });
+    await prisma.$disconnect();
+  }
+}
+
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

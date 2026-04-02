@@ -7,6 +7,12 @@ ComfyUI workflow catalog (see [PRD.md](./PRD.md)).
 - **Node.js** 18.18+ or 20+ (LTS recommended)
 - **PostgreSQL** 16+ for app data and Prisma Migrate (optional locally: Docker via `docker compose` below)
 
+## Public catalog API
+
+`GET /api/workflows` returns only **published** workflows. Query: `page` (default 1), `pageSize` (default 20, max 100). Optional **`q`** — case-insensitive substring match on `title` and `description` (max 200 characters). If `q` is omitted or only whitespace after trim, no text filter is applied (full catalog under pagination).
+
+**Filters** (combined with **`q`** and each other by logical **AND**): repeat **`tag`** for each tag **slug** (e.g. `?tag=portrait&tag=sdxl`); a row must have **every** listed tag. Optional **`base_model`** and **`comfy_version`** — exact match on the stored strings (same spelling/casing as in the database). A **tag slug that does not exist** still yields a valid response with an **empty** `workflows` list and `total: 0` (no separate 404 for unknown tags). Validation: at most **20** `tag` parameters, each slug ≤ **100** characters; `base_model` and `comfy_version` ≤ **200** characters; invalid query → **400** with `{ error, issues }`.
+
 ## Setup
 
 ```bash

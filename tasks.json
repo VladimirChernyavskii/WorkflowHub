@@ -424,7 +424,7 @@
         "Шаг 3: убедиться визуально и в Network, что данные соответствуют API."
       ],
       "dependencies": ["TASK-020", "TASK-021", "TASK-022", "TASK-023"],
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "TASK-025",

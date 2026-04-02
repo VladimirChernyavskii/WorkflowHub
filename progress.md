@@ -193,3 +193,9 @@
 **API / документация:** `GET` [`app/api/workflows/route.ts`](./app/api/workflows/route.ts) — query `sort`, `order` (Zod enum + default). [PRD.md](./PRD.md) §14 п.3, [README.md](./README.md) (Public catalog API).
 
 **Проверки в репозитории:** `npm run lint`, `npm run build` — успешно. `npm run db:catalog-sort-smoke` ([`scripts/catalog-sort-smoke.ts`](./scripts/catalog-sort-smoke.ts)) — три published с разными агрегатами и `published_at`, проверка порядка `id` для `sort=rating`, `downloads`, `date` (все `order=desc`) при фильтре `q` по уникальному токену. Ручные `test_steps` из `tasks.json`: при запущенном dev — `curl` на `/api/workflows?sort=rating&order=desc` (при необходимости с `q` для узкой выборки) и сверка порядка с БД.
+
+## TASK-024 (done)
+
+**Публичная страница каталога** (PRD §5.1, §5.8, §9): маршрут [`/catalog`](./app/catalog/page.tsx) с клиентским [`app/catalog/catalog-client.tsx`](./app/catalog/catalog-client.tsx) — `fetch` на `GET /api/workflows` с query `q` (debounce 300 ms), повторяемые `tag` из поля «Tag slugs» (разделители запятая/пробел), `base_model`, `comfy_version`, `sort`, `order`, пагинация `page` / `pageSize=20`. Список без `<img>`; в строке — title (ссылка на `/workflows/[slug]` для TASK-025), описание `line-clamp-2`, рейтинг и число отзывов, `unique_download_count`, теги (имена), base model и ComfyUI version, опционально автор. Подписи UI на английском. Ошибки валидации API — текст из `issues`. На главной [`app/page.tsx`](./app/page.tsx) добавлена ссылка **Catalog**.
+
+**Проверки в репозитории:** `npm run build` — успешно (маршрут `/catalog` в отчёте сборки). Ручные `test_steps` из `tasks.json`: `npm run dev` → открыть `/catalog`, задать известный slug тега и сменить sort/order → в DevTools Network запросы к `/api/workflows?…` и сверка JSON с экраном.

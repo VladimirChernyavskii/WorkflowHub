@@ -288,7 +288,7 @@
         "Шаг 3: передать повреждённый JSON и убедиться в ошибке парсинга."
       ],
       "dependencies": ["TASK-006", "TASK-007"],
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "TASK-017",

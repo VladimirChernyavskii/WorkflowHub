@@ -1,0 +1,9 @@
+{
+  "version": 0.4,
+  "nodes": [
+    { "id": 1, "type": "Foo", "pos": [0, 0] },
+    { "id": 2, "type": "Bar", "pos": [100, 0] },
+    { "id": 3, "type": "Foo", "pos": [200, 0] }
+  ],
+  "links": []
+}

@@ -19,7 +19,8 @@
     "db:review-smoke": "tsx scripts/review-smoke.ts",
     "db:media-asset-smoke": "tsx scripts/media-asset-smoke.ts",
     "db:admin-audit-log-smoke": "tsx scripts/admin-audit-log-smoke.ts",
-    "storage:smoke": "tsx scripts/s3-smoke.ts"
+    "storage:smoke": "tsx scripts/s3-smoke.ts",
+    "comfy:parse-smoke": "tsx scripts/comfy-workflow-parse-smoke.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1019.0",

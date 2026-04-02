@@ -123,3 +123,11 @@
 **API:** `GET /api/admin/me` → 200 `{ ok: true }` только для админа; `POST /api/admin/workflows` — после guard **501** до TASK-018.
 
 **Проверки в репозитории:** `npm run lint`, `npm run build` — успешно. Ручные `test_steps` из `tasks.json`: пользователь `role=user` — `/admin` и `GET /api/admin/me` отказ; `POST /api/admin/workflows` — 403 с сессией или 401 без; под `admin` или allowlist+логин — успех на `GET /api/admin/me` и 501 на `POST`. В development удобно `POST /api/dev/session` с `userId` двух тестовых пользователей из БД.
+
+## TASK-016 (done)
+
+**Парсер ComfyUI workflow JSON (PRD §14 п.2):** стратегия форматов зафиксирована в [`docs/adr/0001-comfy-workflow-json-formats.md`](./docs/adr/0001-comfy-workflow-json-formats.md) — UI-экспорт (`nodes[].type`) и API-граф (`class_type` по ключам нод), порядок и дедупликация типов. Код: [`lib/comfy/parse-workflow-node-types.ts`](./lib/comfy/parse-workflow-node-types.ts) (`parseComfyWorkflowNodeTypesFromString`, `extractComfyWorkflowNodeTypes`, ошибки `ComfyWorkflowJsonSyntaxError` / `ComfyWorkflowShapeError`), [`lib/comfy/replace-derived-workflow-nodes.ts`](./lib/comfy/replace-derived-workflow-nodes.ts) — транзакция `deleteMany` только для `source=derived`, затем `createMany` с `sortOrder`; строки `admin` не трогаются.
+
+**Фикстуры:** [`fixtures/comfy-workflow-api-sample.json`](./fixtures/comfy-workflow-api-sample.json), [`fixtures/comfy-workflow-ui-sample.json`](./fixtures/comfy-workflow-ui-sample.json). **Проверки:** `npm run comfy:parse-smoke` ([`scripts/comfy-workflow-parse-smoke.ts`](./scripts/comfy-workflow-parse-smoke.ts)) — эталонные файлы, ожидаемые типы, битый JSON → syntax error, `{}` → shape error; при заданном `DATABASE_URL` — запись derived в БД и сохранение admin-ноды.
+
+**Репозиторий:** `npm run lint`, `npm run build`, `npm run comfy:parse-smoke` — успешно.

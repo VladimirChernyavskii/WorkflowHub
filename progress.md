@@ -216,6 +216,12 @@
 
 **Подсказки каталога:** публичный `GET` [`app/api/catalog/suggestions/route.ts`](./app/api/catalog/suggestions/route.ts) — query `kind` ∈ `tag` | `base_model` | `comfy_version`, `q` (trim; пустой → `{ suggestions: [] }`); лимит длины и списка согласованы с [`lib/catalog/query-limits.ts`](./lib/catalog/query-limits.ts) (`MAX_FILTER_STRING_LENGTH`, `CATALOG_SUGGESTIONS_LIMIT`); [`app/api/workflows/route.ts`](./app/api/workflows/route.ts) импортирует те же лимиты для `q` / фильтров. Теги — только связанные с **published** workflow, подстрока по `slug` или `name`; model/version — `distinct` по опубликованным, непустые строки, `contains` insensitive.
 
-**UI:** [`app/catalog/catalog-client.tsx`](./app/catalog/catalog-client.tsx) — компонент `CatalogSuggestionField` (debounce 300 ms, Escape, клик вне, стрелки/Enter): для тегов подсказка по **последнему токену** после запятой/пробела, выбор подставляет **slug**; base model / ComfyUI — подстановка точного значения из API (совместимо с substring-фильтром TASK-041). Placeholders обновлены под подстроковую семантику.
+**UI:** [`app/catalog/catalog-client.tsx`](./app/catalog/catalog-client.tsx) — `CatalogSuggestionField` для **base model** и **ComfyUI** (debounce, Escape, клик вне, стрелки/Enter, подстановка значения из API). Фильтр тегов на `/catalog` после **TASK-043** — чипы + черновик; исторически в TASK-042 теги вводились одной строкой с подсказкой по последнему токену.
 
 **Проверки в репозитории:** `npm run lint`, `npm run build` — успешно. Ручные `test_steps` из `tasks.json`: `npm run dev` → `/catalog`, Network — запросы к `/api/catalog/suggestions` и `/api/workflows`; пустой ввод / Escape / клик вне — список скрывается.
+
+## TASK-043 (done)
+
+**Чипы тегов в каталоге (вариант B):** в [`app/catalog/catalog-client.tsx`](./app/catalog/catalog-client.tsx) — `CatalogTagFilter`: массив чипов `{ needle, label? }` + `tagDraft`; запрос `tag=` = `uniqTagNeedlesForQuery(chips, draft)` (дедуп без учёта регистра); лимиты **20** тегов и **100** символов на значение как у API. Подсказки `GET /api/catalog/suggestions?kind=tag` по trim(draft); выбор из списка добавляет **slug** и очищает черновик; **Enter** и **запятая** коммитят черновик в чип; × удаляет чип. `CatalogSuggestionField` только для `base_model` и `comfy_version`. Документация: [PRD.md](./PRD.md) §14 п.7, [README.md](./README.md) (Public catalog API).
+
+**Проверки в репозитории:** `npm run lint`, `npm run build` — успешно. Ручные `test_steps` из `tasks.json` для TASK-043.

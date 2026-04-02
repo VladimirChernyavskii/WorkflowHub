@@ -15,7 +15,7 @@ ComfyUI workflow catalog (see [PRD.md](./PRD.md)).
 
 **Sort** (PRD §14): optional **`sort`** — `date` (default), `rating` (`average_rating`), or `downloads` (`unique_download_count`). Optional **`order`** — `desc` (default) or `asc`. For **`sort=date`**, ordering is **`published_at`** first (nulls last when `order=desc`, nulls first when `order=asc`), then **`updated_at`** in the same direction, then **`id`** ascending for stability. For **`rating`** and **`downloads`**, the primary column is sorted as requested, then **`id`** ascending. Invalid `sort` / `order` → **400** with `{ error, issues }`.
 
-**Catalog typeahead** (`GET /api/catalog/suggestions`, combobox UX): see [PRD.md](./PRD.md) **§14** item 7 and **TASK-042** in [`tasks.json`](./tasks.json).
+**Catalog typeahead** (`GET /api/catalog/suggestions`, combobox UX): see [PRD.md](./PRD.md) **§14** item 7 and **TASK-042** in [`tasks.json`](./tasks.json). On **`/catalog`**, the **tag** filter is shown as **removable chips** plus a draft input: **Enter** or **comma** commits the draft as another `tag` needle; picking a suggestion adds the slug and clears the input — the **`GET /api/workflows`** contract (repeat **`tag`**) is unchanged (**TASK-043**).
 
 ## Setup
 

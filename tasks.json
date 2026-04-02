@@ -322,7 +322,7 @@
         "Шаг 3: опубликовать и убедиться, что запись видна в админ-списке со статусом published."
       ],
       "dependencies": ["TASK-006", "TASK-007", "TASK-015"],
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "TASK-019",

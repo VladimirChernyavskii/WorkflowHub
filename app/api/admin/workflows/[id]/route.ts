@@ -2,15 +2,17 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import {
-  createWorkflow,
-  createWorkflowBodySchema,
-  listWorkflowsForAdmin,
+  getWorkflowById,
+  patchWorkflowBodySchema,
   PublishValidationError,
   serializeAdminWorkflow,
   SlugConflictError,
+  updateWorkflow,
 } from "@/lib/admin/workflow-crud";
 import { adminRouteGuard } from "@/lib/auth/admin-access";
 import { getSessionUser } from "@/lib/get-session-user";
+
+const idParamSchema = z.string().uuid();
 
 function zodIssues(error: z.ZodError) {
   return error.issues.map((i) => ({
@@ -19,21 +21,36 @@ function zodIssues(error: z.ZodError) {
   }));
 }
 
-export async function GET() {
+type RouteContext = { params: Promise<{ id: string }> };
+
+export async function GET(_request: Request, context: RouteContext) {
   const user = await getSessionUser();
   const denied = adminRouteGuard(user);
   if (denied) return denied;
 
-  const rows = await listWorkflowsForAdmin();
-  return NextResponse.json({
-    workflows: rows.map(serializeAdminWorkflow),
-  });
+  const { id } = await context.params;
+  const idParsed = idParamSchema.safeParse(id);
+  if (!idParsed.success) {
+    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+  }
+
+  const wf = await getWorkflowById(idParsed.data);
+  if (!wf) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  return NextResponse.json(serializeAdminWorkflow(wf));
 }
 
-export async function POST(request: Request) {
+export async function PATCH(request: Request, context: RouteContext) {
   const user = await getSessionUser();
   const denied = adminRouteGuard(user);
   if (denied) return denied;
+
+  const { id } = await context.params;
+  const idParsed = idParamSchema.safeParse(id);
+  if (!idParsed.success) {
+    return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+  }
 
   let json: unknown;
   try {
@@ -42,7 +59,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const parsed = createWorkflowBodySchema.safeParse(json);
+  const parsed = patchWorkflowBodySchema.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Validation failed", issues: zodIssues(parsed.error) },
@@ -51,8 +68,11 @@ export async function POST(request: Request) {
   }
 
   try {
-    const wf = await createWorkflow(parsed.data);
-    return NextResponse.json(serializeAdminWorkflow(wf), { status: 201 });
+    const wf = await updateWorkflow(idParsed.data, parsed.data);
+    if (!wf) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    return NextResponse.json(serializeAdminWorkflow(wf));
   } catch (e) {
     if (e instanceof SlugConflictError) {
       return NextResponse.json(

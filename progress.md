@@ -120,9 +120,9 @@
 
 **UI:** [`app/admin/layout.tsx`](./app/admin/layout.tsx) вызывает `forbidden()` (Next `experimental.authInterrupts` в [`next.config.ts`](./next.config.ts)), страница [`app/admin/page.tsx`](./app/admin/page.tsx), [`app/forbidden.tsx`](./app/forbidden.tsx).
 
-**API:** `GET /api/admin/me` → 200 `{ ok: true }` только для админа; `POST /api/admin/workflows` — после guard **501** до TASK-018.
+**API:** `GET /api/admin/me` → 200 `{ ok: true }` только для админа; `POST /api/admin/workflows` — см. TASK-018.
 
-**Проверки в репозитории:** `npm run lint`, `npm run build` — успешно. Ручные `test_steps` из `tasks.json`: пользователь `role=user` — `/admin` и `GET /api/admin/me` отказ; `POST /api/admin/workflows` — 403 с сессией или 401 без; под `admin` или allowlist+логин — успех на `GET /api/admin/me` и 501 на `POST`. В development удобно `POST /api/dev/session` с `userId` двух тестовых пользователей из БД.
+**Проверки в репозитории:** `npm run lint`, `npm run build` — успешно. Ручные `test_steps` из `tasks.json`: пользователь `role=user` — `/admin` и `GET /api/admin/me` отказ; `POST /api/admin/workflows` — 403 с сессией или 401 без; под `admin` или allowlist+логин — успех на `GET /api/admin/me` и валидный `POST` на `/api/admin/workflows` (см. TASK-018). В development удобно `POST /api/dev/session` с `userId` двух тестовых пользователей из БД.
 
 ## TASK-016 (done)
 
@@ -139,3 +139,13 @@
 **Проверки:** `npm run comfy:parse-smoke` при заданном `DATABASE_URL` — workflow с admin-нодой, затем `replaceDerivedWorkflowNodes` с типами из эталонного JSON; в БД остаются только derived, admin-пусто.
 
 **Репозиторий:** `npm run comfy:parse-smoke` — успешно (parse + DB).
+
+## TASK-018 (done)
+
+**Admin CRUD метаданных Workflow** (PRD §4.3, §6.2, §6.5): модуль [`lib/admin/workflow-crud.ts`](./lib/admin/workflow-crud.ts) — Zod-схемы (`createWorkflowBodySchema`, `patchWorkflowBodySchema`), нормализация slug, политика **publish** (`assertPublishableMetadata` / `PublishValidationError` 422), синхронизация тегов через `Tag` upsert + замена `WorkflowTag` в транзакции, `publishedAt` при первом переходе в `published`, конфликт slug → `SlugConflictError` / HTTP **409**.
+
+**API:** `GET`/`POST` [`app/api/admin/workflows/route.ts`](./app/api/admin/workflows/route.ts); `GET`/`PATCH` [`app/api/admin/workflows/[id]/route.ts`](./app/api/admin/workflows/[id]/route.ts) — `adminRouteGuard`, сериализация `averageRating` как число, флаг `hasWorkflowFile`. Публичный каталог (только `published`) — отдельная задача.
+
+**UI:** [`app/admin/page.tsx`](./app/admin/page.tsx) — список всех статусов; [`app/admin/workflows/new/`](./app/admin/workflows/new/) — создание черновика; [`app/admin/workflows/[id]/`](./app/admin/workflows/[id]/) — редактирование, статус `draft` / `published` / `archived`, теги через запятую; [`app/admin/admin-nav.tsx`](./app/admin/admin-nav.tsx). Формы: `fetch` с `credentials: "include"`.
+
+**Проверки в репозитории:** `npm run lint`, `npm run build` — успешно. Ручные `test_steps` из `tasks.json`: под админом (OAuth или `POST /api/dev/session` с `userId` админа в development) открыть `/admin` → «New workflow» → сохранить draft → «Edit» → изменить поля → сохранить → выбрать `published` → «Save» → в списке `/admin` статус `published`; дубликат slug при создании/смене slug → сообщение об ошибке (409).

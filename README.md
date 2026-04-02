@@ -13,6 +13,8 @@ ComfyUI workflow catalog (see [PRD.md](./PRD.md)).
 
 **Filters** (combined with **`q`** and each other by logical **AND**): repeat **`tag`** for each tag **slug** (e.g. `?tag=portrait&tag=sdxl`); a row must have **every** listed tag. Optional **`base_model`** and **`comfy_version`** — exact match on the stored strings (same spelling/casing as in the database). A **tag slug that does not exist** still yields a valid response with an **empty** `workflows` list and `total: 0` (no separate 404 for unknown tags). Validation: at most **20** `tag` parameters, each slug ≤ **100** characters; `base_model` and `comfy_version` ≤ **200** characters; invalid query → **400** with `{ error, issues }`.
 
+**Sort** (PRD §14): optional **`sort`** — `date` (default), `rating` (`average_rating`), or `downloads` (`unique_download_count`). Optional **`order`** — `desc` (default) or `asc`. For **`sort=date`**, ordering is **`published_at`** first (nulls last when `order=desc`, nulls first when `order=asc`), then **`updated_at`** in the same direction, then **`id`** ascending for stability. For **`rating`** and **`downloads`**, the primary column is sorted as requested, then **`id`** ascending. Invalid `sort` / `order` → **400** with `{ error, issues }`.
+
 ## Setup
 
 ```bash

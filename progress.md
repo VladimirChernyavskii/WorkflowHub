@@ -185,3 +185,11 @@
 **API:** `GET` [`app/api/workflows/route.ts`](./app/api/workflows/route.ts) — `url.searchParams.getAll("tag")` (не `Object.fromEntries`), опциональные `base_model`, `comfy_version`; лимиты и **400**/`issues` при нарушении. Несуществующий slug тега → пустая выдача; зафиксировано в [README.md](./README.md) и [PRD.md](./PRD.md) §14 п.2.
 
 **Проверки в репозитории:** `npm run lint`, `npm run build` — успешно. `npm run db:catalog-filters-smoke` ([`scripts/catalog-filters-smoke.ts`](./scripts/catalog-filters-smoke.ts)) — пересекающиеся теги, разные `base_model`/`comfy_version`, проверка одного и двух тегов, неизвестный тег, AND с `q`. Ручные `test_steps`: `curl` с `?tag=…&base_model=…` на dev.
+
+## TASK-023 (done)
+
+**Сортировка каталога** (PRD §5.1, §14 п.3): [`lib/catalog/workflow-list.ts`](./lib/catalog/workflow-list.ts) — `buildCatalogOrderBy` и параметры `listPublishedWorkflows({ …, sort?, order? })`: `sort` `date` (по умолчанию) / `rating` / `downloads`, `order` `desc` (по умолчанию) / `asc`. Рейтинг и загрузки — по колонкам `average_rating` и `unique_download_count` с tie-break `id asc`. Дата: `published_at` (nulls last при `desc`, nulls first при `asc`), затем `updated_at` в том же направлении, затем `id asc`. С `lib/catalog/workflow-list.ts` снят `server-only`, чтобы smoke-скрипт мог импортировать `listPublishedWorkflows` (модуль по-прежнему используется только из API и скриптов).
+
+**API / документация:** `GET` [`app/api/workflows/route.ts`](./app/api/workflows/route.ts) — query `sort`, `order` (Zod enum + default). [PRD.md](./PRD.md) §14 п.3, [README.md](./README.md) (Public catalog API).
+
+**Проверки в репозитории:** `npm run lint`, `npm run build` — успешно. `npm run db:catalog-sort-smoke` ([`scripts/catalog-sort-smoke.ts`](./scripts/catalog-sort-smoke.ts)) — три published с разными агрегатами и `published_at`, проверка порядка `id` для `sort=rating`, `downloads`, `date` (все `order=desc`) при фильтре `q` по уникальному токену. Ручные `test_steps` из `tasks.json`: при запущенном dev — `curl` на `/api/workflows?sort=rating&order=desc` (при необходимости с `q` для узкой выборки) и сверка порядка с БД.

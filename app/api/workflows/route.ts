@@ -24,6 +24,8 @@ const querySchema = z.object({
   q: z.string().max(MAX_SEARCH_Q_LENGTH).optional(),
   base_model: z.string().max(MAX_FILTER_STRING_LENGTH).optional(),
   comfy_version: z.string().max(MAX_FILTER_STRING_LENGTH).optional(),
+  sort: z.enum(["date", "rating", "downloads"]).default("date"),
+  order: z.enum(["asc", "desc"]).default("desc"),
 });
 
 function zodIssues(error: z.ZodError) {
@@ -90,7 +92,8 @@ export async function GET(request: Request) {
   }
   const { slugs: tagSlugs } = tagParsed;
 
-  const { page, pageSize, q, base_model, comfy_version } = parsed.data;
+  const { page, pageSize, q, base_model, comfy_version, sort, order } =
+    parsed.data;
   const skip = (page - 1) * pageSize;
   const qTrimmed = q?.trim() ?? "";
   const searchQuery =
@@ -111,6 +114,8 @@ export async function GET(request: Request) {
     tagSlugs: tagSlugs.length > 0 ? tagSlugs : undefined,
     baseModel,
     comfyVersion,
+    sort,
+    order,
   });
 
   return NextResponse.json({

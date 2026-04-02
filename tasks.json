@@ -407,7 +407,7 @@
         "Шаг 3: проверить порядок id в ответе вручную или автотестом."
       ],
       "dependencies": ["TASK-020"],
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "TASK-024",

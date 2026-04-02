@@ -23,7 +23,8 @@
     "comfy:parse-smoke": "tsx scripts/comfy-workflow-parse-smoke.ts",
     "db:workflow-json-upload-smoke": "tsx scripts/workflow-json-upload-smoke.ts",
     "db:catalog-search-smoke": "tsx scripts/catalog-search-smoke.ts",
-    "db:catalog-filters-smoke": "tsx scripts/catalog-filters-smoke.ts"
+    "db:catalog-filters-smoke": "tsx scripts/catalog-filters-smoke.ts",
+    "db:catalog-sort-smoke": "tsx scripts/catalog-sort-smoke.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1019.0",

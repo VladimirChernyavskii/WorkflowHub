@@ -52,7 +52,7 @@ function parseTagSlugs(
         issues: [
           {
             path: "tag",
-            message: `Each tag slug must be at most ${MAX_TAG_SLUG_LENGTH} characters`,
+            message: `Each tag value must be at most ${MAX_TAG_SLUG_LENGTH} characters`,
           },
         ],
       };

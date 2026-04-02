@@ -3,15 +3,18 @@ import { Prisma, WorkflowStatus } from "@prisma/client";
 export type PublishedCatalogWhereParams = {
   /** Case-insensitive substring on title or description (TASK-021). */
   searchQuery?: string;
-  /** Tag slugs; workflows must have every tag (AND); full-string match, case-insensitive (TASK-022, TASK-040). */
+  /**
+   * Values from repeated `tag=` query params; AND across values.
+   * Each value matches if some linked tag has slug OR name containing the substring (case-insensitive, TASK-041).
+   */
   tagSlugs?: string[];
-  /** Full-string match on `workflows.base_model`, case-insensitive (TASK-040). */
+  /** Case-insensitive substring match on `workflows.base_model` (TASK-041). */
   baseModel?: string;
-  /** Full-string match on `workflows.comfy_version`, case-insensitive (TASK-040). */
+  /** Case-insensitive substring match on `workflows.comfy_version` (TASK-041). */
   comfyVersion?: string;
 };
 
-/** Published rows only; optional text search and catalog filters (TASK-021, TASK-022, TASK-040). */
+/** Published rows only; optional text search and catalog filters (TASK-021, TASK-022, TASK-041). */
 export function buildPublishedCatalogWhere(
   params: PublishedCatalogWhereParams = {}
 ): Prisma.WorkflowWhereInput {
@@ -33,12 +36,15 @@ export function buildPublishedCatalogWhere(
     });
   }
 
-  const uniqueTagSlugs = [...new Set(tagSlugs)];
-  for (const slug of uniqueTagSlugs) {
+  const uniqueTagNeedles = [...new Set(tagSlugs)];
+  for (const needle of uniqueTagNeedles) {
     and.push({
       workflowTags: {
         some: {
-          tag: { slug: { equals: slug, mode: "insensitive" } },
+          OR: [
+            { tag: { slug: { contains: needle, mode: "insensitive" } } },
+            { tag: { name: { contains: needle, mode: "insensitive" } } },
+          ],
         },
       },
     });
@@ -46,13 +52,13 @@ export function buildPublishedCatalogWhere(
 
   if (baseModel) {
     and.push({
-      baseModel: { equals: baseModel, mode: "insensitive" },
+      baseModel: { contains: baseModel, mode: "insensitive" },
     });
   }
 
   if (comfyVersion) {
     and.push({
-      comfyVersion: { equals: comfyVersion, mode: "insensitive" },
+      comfyVersion: { contains: comfyVersion, mode: "insensitive" },
     });
   }
 

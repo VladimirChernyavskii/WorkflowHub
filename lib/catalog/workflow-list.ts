@@ -68,11 +68,14 @@ export async function listPublishedWorkflows(params: {
   take: number;
   /** Non-empty substring; case-insensitive match on title or description (TASK-021). */
   searchQuery?: string;
-  /** Tag slugs; AND semantics; full-string slug match, case-insensitive (TASK-022, TASK-040). */
+  /**
+   * Repeated `tag=` values; AND across values. Each matches if some linked tag's slug or name
+   * contains the substring (case-insensitive, TASK-041).
+   */
   tagSlugs?: string[];
-  /** `base_model` full-string match, case-insensitive (TASK-040). */
+  /** `base_model` case-insensitive substring (TASK-041). */
   baseModel?: string;
-  /** `comfy_version` full-string match, case-insensitive (TASK-040). */
+  /** `comfy_version` case-insensitive substring (TASK-041). */
   comfyVersion?: string;
   /** PRD §5.1 / §14; defaults preserve pre–TASK-023 behavior. */
   sort?: CatalogSortKind;

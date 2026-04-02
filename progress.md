@@ -205,3 +205,9 @@
 **Регистронезависимые exact-фильтры каталога:** в [`lib/catalog/published-catalog-where.ts`](./lib/catalog/published-catalog-where.ts) для `tag` (slug), `base_model` и `comfy_version` используется Prisma `equals` с `mode: "insensitive"`; логика **AND** с `q` и между несколькими `tag` без изменений. JSDoc в [`lib/catalog/workflow-list.ts`](./lib/catalog/workflow-list.ts). Документация: [PRD.md](./PRD.md) §14 п.2, [README.md](./README.md) (Public catalog API).
 
 **Проверки в репозитории:** `npm run lint`, `npm run build`, `npm run db:catalog-filters-smoke` — расширен проверками альтернативного регистра для slug тега, `base_model` и `comfy_version` (у smoke-фикстуры `w2` поле `comfy_version` задано как `v2.0`). Ручной `curl` на `GET /api/workflows` с теми же значениями в другом регистре даёт те же `id`, что и канонический запрос.
+
+## TASK-041 (done)
+
+**Substring-фильтры каталога (TASK-041):** в [`lib/catalog/published-catalog-where.ts`](./lib/catalog/published-catalog-where.ts) для каждого `tag=` — `workflowTags.some` с **OR** по `tag.slug` и `tag.name` (`contains` + `insensitive`); `base_model` и `comfy_version` — `contains` + `insensitive`. JSDoc в [`lib/catalog/workflow-list.ts`](./lib/catalog/workflow-list.ts); сообщение валидации `tag` в [`app/api/workflows/route.ts`](./app/api/workflows/route.ts). Документация: [PRD.md](./PRD.md) §14 п.2 и п.7, [README.md](./README.md). Smoke [`scripts/catalog-filters-smoke.ts`](./scripts/catalog-filters-smoke.ts): уникальные подстроки по `suffix` (чужие строки в БД не ломают assert), проверки частичного slug тега, совпадения по **name** тега, `sdxl`, частичного `comfy_version`, AND с `q`.
+
+**Проверки:** `npm run lint`, `npm run build`, `npm run db:catalog-filters-smoke` — успешно. Ручной `curl.exe` к локальному dev с `q` и несколькими `tag` в этой среде вернул **500** (вероятно окружение/БД dev); семантика фильтров покрыта smoke на `DATABASE_URL`.

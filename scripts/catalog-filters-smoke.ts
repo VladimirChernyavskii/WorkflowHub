@@ -30,8 +30,9 @@ async function main() {
 
   const prisma = new PrismaClient();
   const suffix = `${Date.now()}`;
-  const slugT1 = `cat_filt_t1_${suffix}`;
-  const slugT2 = `cat_filt_t2_${suffix}`;
+  const slugT1 = `cat_filt_portrait_${suffix}`;
+  /** Short slug so a name-only needle does not appear in the slug. */
+  const slugT2 = `b_${suffix}`;
   const wfSlug1 = `cat_filt_w1_${suffix}`;
   const wfSlug2 = `cat_filt_w2_${suffix}`;
   const wfSlug3 = `cat_filt_w3_${suffix}`;
@@ -41,7 +42,7 @@ async function main() {
       data: { slug: slugT1, name: "Cat filter T1" },
     });
     const tag2 = await prisma.tag.create({
-      data: { slug: slugT2, name: "Cat filter T2" },
+      data: { slug: slugT2, name: `Label_name_marker_${suffix}` },
     });
 
     const pub = {
@@ -66,8 +67,8 @@ async function main() {
         title: "Cat filter W2",
         description: "d2",
         ...pub,
-        baseModel: "Flux",
-        comfyVersion: "v2.0",
+        baseModel: `CatFiltFlux_${suffix}`,
+        comfyVersion: `CatFiltComfy_v2.0_${suffix}`,
       },
     });
     const w3 = await prisma.workflow.create({
@@ -116,8 +117,40 @@ async function main() {
       ![...oneTag.ids].every((id) => oneTagAltCase.ids.has(id))
     ) {
       console.error(
-        "[workflowhub] catalog-filters-smoke: tag slug alternate case should match same rows",
+        "[workflowhub] catalog-filters-smoke: tag value alternate case should match same rows",
         { oneTag, oneTagAltCase }
+      );
+      process.exit(1);
+    }
+
+    const tagPartialPortrait = await countMatching(prisma, {
+      tagSlugs: [`rait_${suffix}`],
+    });
+    if (
+      !tagPartialPortrait.ids.has(w1.id) ||
+      !tagPartialPortrait.ids.has(w2.id) ||
+      tagPartialPortrait.ids.has(w3.id) ||
+      tagPartialPortrait.total < oneTag.total
+    ) {
+      console.error(
+        "[workflowhub] catalog-filters-smoke: tag substring in portrait slug must include w1+w2, exclude w3",
+        tagPartialPortrait
+      );
+      process.exit(1);
+    }
+
+    const tagByName = await countMatching(prisma, {
+      tagSlugs: [`name_marker_${suffix}`],
+    });
+    if (
+      !tagByName.ids.has(w2.id) ||
+      !tagByName.ids.has(w3.id) ||
+      tagByName.ids.has(w1.id) ||
+      tagByName.total < 2
+    ) {
+      console.error(
+        "[workflowhub] catalog-filters-smoke: tag match via tag name must include w2+w3, not w1",
+        tagByName
       );
       process.exit(1);
     }
@@ -141,28 +174,32 @@ async function main() {
     }
 
     const unknownTag = await countMatching(prisma, {
-      tagSlugs: [`cat_filt_missing_${suffix}`],
+      tagSlugs: [`zz_cat_filt_missing_${suffix}`],
     });
     if (unknownTag.total !== 0) {
       console.error(
-        "[workflowhub] catalog-filters-smoke: unknown tag should yield empty list",
+        "[workflowhub] catalog-filters-smoke: tag needle matching no slug/name should yield empty list",
         unknownTag
       );
       process.exit(1);
     }
 
-    const fluxOnly = await countMatching(prisma, { baseModel: "Flux" });
-    if (fluxOnly.total !== 1 || !fluxOnly.ids.has(w2.id)) {
+    const fluxNeedle = `CatFiltFlux_${suffix}`;
+    const fluxOnly = await countMatching(prisma, { baseModel: fluxNeedle });
+    if (!fluxOnly.ids.has(w2.id) || fluxOnly.total < 1) {
       console.error(
-        "[workflowhub] catalog-filters-smoke: base_model=Flux mismatch",
+        "[workflowhub] catalog-filters-smoke: base_model fixture Flux needle mismatch",
         fluxOnly
       );
       process.exit(1);
     }
 
-    const fluxLower = await countMatching(prisma, { baseModel: "flux" });
+    const fluxLower = await countMatching(prisma, {
+      baseModel: fluxNeedle.toLowerCase(),
+    });
     if (
-      fluxLower.total !== fluxOnly.total ||
+      !fluxLower.ids.has(w2.id) ||
+      fluxLower.total < fluxOnly.total ||
       ![...fluxOnly.ids].every((id) => fluxLower.ids.has(id))
     ) {
       console.error(
@@ -172,25 +209,52 @@ async function main() {
       process.exit(1);
     }
 
-    const comfyV20 = await countMatching(prisma, { comfyVersion: "v2.0" });
-    if (comfyV20.total !== 1 || !comfyV20.ids.has(w2.id)) {
+    const sdxlPartial = await countMatching(prisma, { baseModel: "sdxl" });
+    if (
+      !sdxlPartial.ids.has(w1.id) ||
+      !sdxlPartial.ids.has(w3.id) ||
+      sdxlPartial.ids.has(w2.id) ||
+      sdxlPartial.total < 2
+    ) {
       console.error(
-        "[workflowhub] catalog-filters-smoke: comfy_version=v2.0 mismatch",
+        "[workflowhub] catalog-filters-smoke: base_model substring sdxl must include fixture W1+W3, not W2",
+        sdxlPartial
+      );
+      process.exit(1);
+    }
+
+    const comfyFull = `CatFiltComfy_v2.0_${suffix}`;
+    const comfyV20 = await countMatching(prisma, { comfyVersion: comfyFull });
+    if (!comfyV20.ids.has(w2.id) || comfyV20.total < 1) {
+      console.error(
+        "[workflowhub] catalog-filters-smoke: comfy_version full fixture mismatch",
         comfyV20
       );
       process.exit(1);
     }
 
     const comfyV20AltCase = await countMatching(prisma, {
-      comfyVersion: "V2.0",
+      comfyVersion: comfyFull.replace("v2", "V2"),
     });
     if (
-      comfyV20AltCase.total !== comfyV20.total ||
+      !comfyV20AltCase.ids.has(w2.id) ||
+      comfyV20AltCase.total < comfyV20.total ||
       ![...comfyV20.ids].every((id) => comfyV20AltCase.ids.has(id))
     ) {
       console.error(
         "[workflowhub] catalog-filters-smoke: comfy_version case-insensitive mismatch",
         { comfyV20, comfyV20AltCase }
+      );
+      process.exit(1);
+    }
+
+    const comfyPartial = await countMatching(prisma, {
+      comfyVersion: `2.0_${suffix}`,
+    });
+    if (!comfyPartial.ids.has(w2.id) || comfyPartial.total < 1) {
+      console.error(
+        "[workflowhub] catalog-filters-smoke: comfy_version substring must include fixture W2",
+        comfyPartial
       );
       process.exit(1);
     }
@@ -210,7 +274,7 @@ async function main() {
     const tripleAnd = await countMatching(prisma, {
       searchQuery: "Cat filter",
       tagSlugs: [slugT1],
-      baseModel: "Flux",
+      baseModel: "CatFiltFlux",
     });
     if (tripleAnd.total !== 1 || !tripleAnd.ids.has(w2.id)) {
       console.error(

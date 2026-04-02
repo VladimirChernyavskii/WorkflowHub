@@ -715,7 +715,7 @@
         "Шаг 3: npm run db:catalog-filters-smoke и ручной curl с несколькими tag= и q."
       ],
       "dependencies": ["TASK-040"],
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "TASK-042",

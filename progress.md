@@ -149,3 +149,15 @@
 **UI:** [`app/admin/page.tsx`](./app/admin/page.tsx) — список всех статусов; [`app/admin/workflows/new/`](./app/admin/workflows/new/) — создание черновика; [`app/admin/workflows/[id]/`](./app/admin/workflows/[id]/) — редактирование, статус `draft` / `published` / `archived`, теги через запятую; [`app/admin/admin-nav.tsx`](./app/admin/admin-nav.tsx). Формы: `fetch` с `credentials: "include"`.
 
 **Проверки в репозитории:** `npm run lint`, `npm run build` — успешно. Ручные `test_steps` из `tasks.json`: под админом (OAuth или `POST /api/dev/session` с `userId` админа в development) открыть `/admin` → «New workflow» → сохранить draft → «Edit» → изменить поля → сохранить → выбрать `published` → «Save» → в списке `/admin` статус `published`; дубликат slug при создании/смене slug → сообщение об ошибке (409).
+
+## TASK-019 (done)
+
+**Загрузка workflow JSON админом** (PRD §5.5, §5.2): ядро в [`lib/workflow-json-artifact.ts`](./lib/workflow-json-artifact.ts) — `readWorkflowJsonBytes` (multipart поле `file` или сырое тело), лимит 32 МБ, `parseComfyWorkflowNodeTypesFromString`, `PutObject` в S3 (`parseEnv` + [`lib/s3-factory.ts`](./lib/s3-factory.ts), ключ `workflows/{workflowId}/current.json`), `workflowFile.upsert`, в одной транзакции с пересборкой нод через [`replaceDerivedWorkflowNodesInTransaction`](./lib/comfy/replace-derived-workflow-nodes.ts); при ошибке БД после PutObject — best-effort `DeleteObject`. Сервер-only реэкспорт: [`lib/admin/workflow-json-upload.ts`](./lib/admin/workflow-json-upload.ts).
+
+**API:** `POST` [`app/api/admin/workflows/[id]/workflow-json/route.ts`](./app/api/admin/workflows/[id]/workflow-json/route.ts) — `adminRouteGuard`, ответ как у админского workflow JSON.
+
+**Публикация без JSON:** [`lib/admin/workflow-crud.ts`](./lib/admin/workflow-crud.ts) — `POST` создание со статусом `published` запрещено (`PublishValidationError`); при `PATCH` → `published` обязательна строка `WorkflowFile` для workflow.
+
+**UI:** [`app/admin/workflows/[id]/edit-workflow-form.tsx`](./app/admin/workflows/[id]/edit-workflow-form.tsx) — секция загрузки JSON, опция `published` в статусе недоступна без файла (кроме уже опубликованной записи для смены статуса).
+
+**Проверки в репозитории:** `npm run lint`, `npm run build` — успешно. `npm run db:workflow-json-upload-smoke` — при заданных `DATABASE_URL` и полном S3 в `.env.local`: эталонный JSON из `fixtures/`, `HeadObject` в бакете, derived-ноды в БД, отказ на мусорный JSON; без S3 скрипт завершается с осмысленным сообщением о конфигурации. Ручные шаги из `tasks.json`: админ → загрузка валидного JSON → проверка объекта в MinIO/S3 и `workflow_nodes`; мусор → 422; попытка publish без файла → 422.

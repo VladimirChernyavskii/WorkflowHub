@@ -339,7 +339,7 @@
         "Шаг 3: проверить в БД WorkflowNode после парсинга; загрузить мусор и убедиться в отказе."
       ],
       "dependencies": ["TASK-004", "TASK-016", "TASK-017", "TASK-018"],
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "TASK-020",

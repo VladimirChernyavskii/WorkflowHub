@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { AdminNav } from "@/app/admin/admin-nav";
 import type { SerializedAdminWorkflow } from "@/lib/admin/workflow-crud";
@@ -13,6 +13,15 @@ export function EditWorkflowForm({ initial }: Props) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [hasWorkflowFile, setHasWorkflowFile] = useState(
+    initial.hasWorkflowFile
+  );
+  const [jsonError, setJsonError] = useState<string | null>(null);
+  const [jsonPending, setJsonPending] = useState(false);
+
+  useEffect(() => {
+    setHasWorkflowFile(initial.hasWorkflowFile);
+  }, [initial.hasWorkflowFile]);
 
   const defaultTagLine = useMemo(
     () => initial.tags.map((t) => t.slug).join(", "),
@@ -62,18 +71,98 @@ export function EditWorkflowForm({ initial }: Props) {
     }
   }
 
+  async function onUploadJson(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setJsonError(null);
+    const form = e.currentTarget;
+    const input = form.elements.namedItem("workflowFile") as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) {
+      setJsonError("Choose a workflow JSON file.");
+      return;
+    }
+    const fd = new FormData();
+    fd.set("file", file);
+    setJsonPending(true);
+    try {
+      const res = await fetch(
+        `/api/admin/workflows/${initial.id}/workflow-json`,
+        {
+          method: "POST",
+          body: fd,
+          credentials: "include",
+        }
+      );
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+      };
+      if (!res.ok) {
+        setJsonError(data.error ?? `Upload failed (${res.status})`);
+        return;
+      }
+      setHasWorkflowFile(true);
+      input.value = "";
+      router.refresh();
+    } finally {
+      setJsonPending(false);
+    }
+  }
+
   return (
     <main className="mx-auto max-w-xl p-8">
       <AdminNav />
       <h1 className="text-2xl font-semibold tracking-tight">Edit workflow</h1>
       <p className="mt-1 font-mono text-xs text-neutral-500">{initial.id}</p>
 
-      {!initial.hasWorkflowFile ? (
-        <p className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
-          No workflow JSON uploaded yet. Publishing is allowed for metadata
-          testing; TASK-019 will require a valid file before publish.
+      <section className="mt-6 rounded-md border border-neutral-200 p-4 dark:border-neutral-700">
+        <h2 className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">
+          Workflow JSON (ComfyUI)
+        </h2>
+        <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
+          Upload replaces the artifact in storage and rebuilds the derived node
+          list; manual node overrides are cleared (PRD §5.2). Publishing requires
+          a successful upload first.
         </p>
-      ) : null}
+        <form
+          onSubmit={onUploadJson}
+          className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end"
+        >
+          <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm">
+            <span className="font-medium text-neutral-800 dark:text-neutral-200">
+              File
+            </span>
+            <input
+              name="workflowFile"
+              type="file"
+              accept="application/json,.json"
+              className="text-sm text-neutral-800 file:mr-2 file:rounded-md file:border file:border-neutral-300 file:bg-white file:px-2 file:py-1 dark:text-neutral-200 dark:file:border-neutral-600 dark:file:bg-neutral-950"
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={jsonPending}
+            className="rounded-md bg-neutral-800 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-200 dark:text-neutral-900"
+          >
+            {jsonPending ? "Uploading…" : "Upload JSON"}
+          </button>
+        </form>
+        {jsonError ? (
+          <p className="mt-2 text-sm text-red-600 dark:text-red-400" role="alert">
+            {jsonError}
+          </p>
+        ) : null}
+        {hasWorkflowFile ? (
+          <p className="mt-2 text-xs text-green-700 dark:text-green-400">
+            A workflow JSON artifact is on file. You can set status to published
+            when metadata is complete.
+          </p>
+        ) : (
+          <p className="mt-2 text-xs text-amber-800 dark:text-amber-200">
+            No workflow JSON yet — status &quot;published&quot; is disabled until
+            you upload a valid ComfyUI workflow file.
+          </p>
+        )}
+      </section>
 
       <form onSubmit={onSubmit} className="mt-8 flex flex-col gap-4">
         <label className="flex flex-col gap-1 text-sm">
@@ -121,7 +210,14 @@ export function EditWorkflowForm({ initial }: Props) {
             className="rounded-md border border-neutral-300 bg-white px-3 py-2 text-neutral-900 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
           >
             <option value="draft">draft</option>
-            <option value="published">published</option>
+            <option
+              value="published"
+              disabled={
+                !hasWorkflowFile && initial.status !== "published"
+              }
+            >
+              published
+            </option>
             <option value="archived">archived</option>
           </select>
         </label>

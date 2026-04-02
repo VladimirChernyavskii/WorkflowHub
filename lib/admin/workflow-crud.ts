@@ -212,19 +212,13 @@ export async function createWorkflow(
   data: CreateWorkflowBody
 ): Promise<WorkflowWithTags> {
   if (data.status === "published") {
-    assertPublishableMetadata({
-      title: data.title,
-      slug: data.slug,
-      description: data.description,
-      baseModel: data.baseModel,
-      comfyVersion: data.comfyVersion,
-      authorDisplayName: data.authorDisplayName,
-    });
+    throw new PublishValidationError(
+      "Cannot create workflow as published. Create as draft, upload workflow JSON, then publish.",
+      "status"
+    );
   }
 
-  const now = new Date();
-  const publishedAt =
-    data.status === "published" ? now : null;
+  const publishedAt = null;
 
   try {
     return await prisma.$transaction(async (tx) => {
@@ -317,6 +311,15 @@ export async function updateWorkflow(
   const merged = mergePatchWithWorkflow(existing, patch);
   if (merged.status === "published") {
     assertPublishableMetadata(merged);
+    const file = await prisma.workflowFile.findUnique({
+      where: { workflowId: id },
+    });
+    if (!file) {
+      throw new PublishValidationError(
+        "Cannot publish: upload a valid ComfyUI workflow JSON first.",
+        "workflowJson"
+      );
+    }
   }
 
   const publishedAt =

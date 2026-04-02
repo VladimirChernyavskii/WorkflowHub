@@ -2,14 +2,16 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import {
+  MAX_FILTER_STRING_LENGTH,
+  MAX_SEARCH_Q_LENGTH,
+} from "@/lib/catalog/query-limits";
+import {
   listPublishedWorkflows,
   serializePublicWorkflowSummary,
 } from "@/lib/catalog/workflow-list";
 
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
-const MAX_SEARCH_Q_LENGTH = 200;
-const MAX_FILTER_STRING_LENGTH = 200;
 const MAX_TAG_PARAMS = 20;
 const MAX_TAG_SLUG_LENGTH = 100;
 

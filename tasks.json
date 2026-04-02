@@ -680,6 +680,60 @@
       ],
       "dependencies": ["TASK-011", "TASK-018", "TASK-035", "TASK-036"],
       "status": "pending"
+    },
+    {
+      "id": "TASK-040",
+      "category": "functional",
+      "priority": "medium",
+      "description": "Каталог: параметры GET /api/workflows — tag (по slug тега), base_model, comfy_version — сравнивать регистронезависимо при сохранении семантики полного совпадения строки (как v1, но без чувствительности к регистру). Реализация в buildPublishedCatalogWhere и согласованные тесты/smoke.",
+      "acceptance_criteria": [
+        "Тот же slug тега в другом регистре даёт ту же выборку, что и в каноническом регистре БД.",
+        "base_model и comfy_version с тем же набором символов в другом регистре совпадают со строками в workflows.",
+        "Семантика AND между tag, q и остальными фильтрами не сломана."
+      ],
+      "test_steps": [
+        "Шаг 1: подготовить published workflow с известными slug тега, base_model, comfy_version.",
+        "Шаг 2: вызвать API с теми же значениями в другом регистре — те же id в ответе.",
+        "Шаг 3: обновить или дополнить npm run db:catalog-filters-smoke при необходимости и убедиться, что скрипт проходит."
+      ],
+      "dependencies": ["TASK-022"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-041",
+      "category": "functional",
+      "priority": "medium",
+      "description": "Каталог: для tag, base_model, comfy_version перейти с точного совпадения на регистронезависимое вхождение подстроки (contains / ILIKE). Для каждого tag= workflow должен иметь тег, у которого slug ИЛИ name содержит переданную подстроку (OR внутри одного условия тега). Несколько tag= по-прежнему объединяются через AND. После этой задачи пользовательский эффект TASK-040 (только регистр при exact) сублинируется; TASK-040 оставлен отдельным этапом для ревью/отката. Обновить PRD §14.7, README и catalog-filters-smoke под новую семантику.",
+      "acceptance_criteria": [
+        "Частичное совпадение slug или name тега находит workflow; комбинация нескольких tag= сужает по AND.",
+        "base_model и comfy_version фильтруются по подстроке без учёта регистра.",
+        "Комбинация с q остаётся логическим AND; лимиты длины query-параметров из API сохранены."
+      ],
+      "test_steps": [
+        "Шаг 1: создать данные с тегом slug portrait и проверить фильтр tag=port.",
+        "Шаг 2: проверить base_model с частью строки (например sdxl для SDXL).",
+        "Шаг 3: npm run db:catalog-filters-smoke и ручной curl с несколькими tag= и q."
+      ],
+      "dependencies": ["TASK-040"],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-042",
+      "category": "ui",
+      "priority": "medium",
+      "description": "Каталог UI: комбобоксы/выпадающие подсказки для полей Tag slugs, Base model, ComfyUI version; при вводе показывать варианты, содержащие подстроку (регистронезависимо), лимит результатов (например 20). Публичный endpoint, например GET /api/catalog/suggestions?kind=tag|base_model|comfy_version&q=… (валидация kind и длины q). Источник данных: существующая модель Tag (предпочтительно только теги, связанные с published workflow) и DISTINCT по base_model/comfy_version среди published workflows. Отдельные справочные таблицы для base model / ComfyUI не обязательны в рамках этой задачи; нормализация словаря — опциональная последующая задача. Зависит от семантики фильтров TASK-041.",
+      "acceptance_criteria": [
+        "При наборе текста уходят запросы к suggestions API (debounce); в списке только релевантные варианты.",
+        "Подсказки для base_model и comfy_version не включают значения только из draft/archived.",
+        "Выбор из списка подставляет значение, совместимое с GET /api/workflows после TASK-041."
+      ],
+      "test_steps": [
+        "Шаг 1: открыть /catalog, ввести часть slug тега — увидеть выпадашку и выбрать значение.",
+        "Шаг 2: то же для base model и ComfyUI version; проверить Network (suggestions + list).",
+        "Шаг 3: убедиться, что подсказки исчезают при пустом вводе или по Escape/клику вне."
+      ],
+      "dependencies": ["TASK-041", "TASK-024"],
+      "status": "pending"
     }
   ]
 }

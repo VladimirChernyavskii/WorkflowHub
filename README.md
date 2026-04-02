@@ -15,6 +15,8 @@ ComfyUI workflow catalog (see [PRD.md](./PRD.md)).
 
 **Sort** (PRD §14): optional **`sort`** — `date` (default), `rating` (`average_rating`), or `downloads` (`unique_download_count`). Optional **`order`** — `desc` (default) or `asc`. For **`sort=date`**, ordering is **`published_at`** first (nulls last when `order=desc`, nulls first when `order=asc`), then **`updated_at`** in the same direction, then **`id`** ascending for stability. For **`rating`** and **`downloads`**, the primary column is sorted as requested, then **`id`** ascending. Invalid `sort` / `order` → **400** with `{ error, issues }`.
 
+**Evolving filter UX** (case-insensitive matching, substring filters, catalog field typeahead / `GET /api/catalog/suggestions`): see [PRD.md](./PRD.md) **§14.7** and engineering tasks **TASK-040–042** in [`tasks.json`](./tasks.json). Until those tasks are implemented, filter behavior remains as described in the **Filters** paragraph above.
+
 ## Setup
 
 ```bash

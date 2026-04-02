@@ -161,3 +161,11 @@
 **UI:** [`app/admin/workflows/[id]/edit-workflow-form.tsx`](./app/admin/workflows/[id]/edit-workflow-form.tsx) — секция загрузки JSON, опция `published` в статусе недоступна без файла (кроме уже опубликованной записи для смены статуса).
 
 **Проверки в репозитории:** `npm run lint`, `npm run build` — успешно. `npm run db:workflow-json-upload-smoke` — при заданных `DATABASE_URL` и полном S3 в `.env.local`: эталонный JSON из `fixtures/`, `HeadObject` в бакете, derived-ноды в БД, отказ на мусорный JSON; без S3 скрипт завершается с осмысленным сообщением о конфигурации. Ручные шаги из `tasks.json`: админ → загрузка валидного JSON → проверка объекта в MinIO/S3 и `workflow_nodes`; мусор → 422; попытка publish без файла → 422.
+
+## TASK-020 (done)
+
+**Публичный список workflow** (PRD §5.1, только каталог): [`lib/catalog/workflow-list.ts`](./lib/catalog/workflow-list.ts) — `listPublishedWorkflows` (`where: status = published`, без draft/archived), сортировка по умолчанию `publishedAt desc` (nulls last) затем `updatedAt desc` (для будущего TASK-023), `include` только теги; `serializePublicWorkflowSummary` — поля `averageRating`, `reviewCount`, `uniqueDownloadCount` (как у админского JSON), метаданные каталога и `tags` (`id`, `slug`, `name`), без `status` и `hasWorkflowFile`.
+
+**API:** `GET` [`app/api/workflows/route.ts`](./app/api/workflows/route.ts) — без сессии; query `page` (default 1), `pageSize` (default 20, max 100), невалидные значения → **400** с `issues`; тело `{ workflows, page, pageSize, total }`.
+
+**Проверки в репозитории:** `npm run lint`, `npm run build` — успешно. Ручные `test_steps` из `tasks.json`: в БД есть published и draft → `curl` без cookie на `GET /api/workflows` (и при ≥2 published — `?page=2&pageSize=1`): в массиве только опубликованные записи, `total` согласован с пагинацией.

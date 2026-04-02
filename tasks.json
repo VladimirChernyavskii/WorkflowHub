@@ -356,7 +356,7 @@
         "Шаг 3: убедиться, что в ответе только published и пагинация работает на второй странице."
       ],
       "dependencies": ["TASK-018"],
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "TASK-021",

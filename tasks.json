@@ -697,7 +697,7 @@
         "Шаг 3: обновить или дополнить npm run db:catalog-filters-smoke при необходимости и убедиться, что скрипт проходит."
       ],
       "dependencies": ["TASK-022"],
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "TASK-041",

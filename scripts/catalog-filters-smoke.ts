@@ -67,7 +67,7 @@ async function main() {
         description: "d2",
         ...pub,
         baseModel: "Flux",
-        comfyVersion: "2.0",
+        comfyVersion: "v2.0",
       },
     });
     const w3 = await prisma.workflow.create({
@@ -103,6 +103,21 @@ async function main() {
       console.error(
         "[workflowhub] catalog-filters-smoke: expected two workflows for single tag",
         oneTag
+      );
+      process.exit(1);
+    }
+
+    const oneTagAltCase = await countMatching(prisma, {
+      tagSlugs: [slugT1.toUpperCase()],
+    });
+    if (
+      oneTagAltCase.total !== oneTag.total ||
+      oneTagAltCase.ids.size !== oneTag.ids.size ||
+      ![...oneTag.ids].every((id) => oneTagAltCase.ids.has(id))
+    ) {
+      console.error(
+        "[workflowhub] catalog-filters-smoke: tag slug alternate case should match same rows",
+        { oneTag, oneTagAltCase }
       );
       process.exit(1);
     }
@@ -145,11 +160,37 @@ async function main() {
       process.exit(1);
     }
 
-    const comfy20 = await countMatching(prisma, { comfyVersion: "2.0" });
-    if (comfy20.total !== 1 || !comfy20.ids.has(w2.id)) {
+    const fluxLower = await countMatching(prisma, { baseModel: "flux" });
+    if (
+      fluxLower.total !== fluxOnly.total ||
+      ![...fluxOnly.ids].every((id) => fluxLower.ids.has(id))
+    ) {
       console.error(
-        "[workflowhub] catalog-filters-smoke: comfy_version=2.0 mismatch",
-        comfy20
+        "[workflowhub] catalog-filters-smoke: base_model case-insensitive mismatch",
+        { fluxOnly, fluxLower }
+      );
+      process.exit(1);
+    }
+
+    const comfyV20 = await countMatching(prisma, { comfyVersion: "v2.0" });
+    if (comfyV20.total !== 1 || !comfyV20.ids.has(w2.id)) {
+      console.error(
+        "[workflowhub] catalog-filters-smoke: comfy_version=v2.0 mismatch",
+        comfyV20
+      );
+      process.exit(1);
+    }
+
+    const comfyV20AltCase = await countMatching(prisma, {
+      comfyVersion: "V2.0",
+    });
+    if (
+      comfyV20AltCase.total !== comfyV20.total ||
+      ![...comfyV20.ids].every((id) => comfyV20AltCase.ids.has(id))
+    ) {
+      console.error(
+        "[workflowhub] catalog-filters-smoke: comfy_version case-insensitive mismatch",
+        { comfyV20, comfyV20AltCase }
       );
       process.exit(1);
     }

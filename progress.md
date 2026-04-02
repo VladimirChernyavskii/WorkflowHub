@@ -180,11 +180,11 @@
 
 ## TASK-022 (done)
 
-**Фильтры каталога** (PRD §5.1): [`lib/catalog/published-catalog-where.ts`](./lib/catalog/published-catalog-where.ts) — `buildPublishedCatalogWhere({ searchQuery?, tagSlugs?, baseModel?, comfyVersion? })`; для каждого slug тега условие `workflowTags.some(tag.slug)`; несколько тегов и остальные поля объединяются через **AND** вместе с блоком поиска по `q`. [`lib/catalog/workflow-list.ts`](./lib/catalog/workflow-list.ts) прокидывает те же поля в один `where` для `findMany` и `count`.
+**Фильтры каталога** (PRD §5.1): [`lib/catalog/published-catalog-where.ts`](./lib/catalog/published-catalog-where.ts) — `buildPublishedCatalogWhere({ searchQuery?, tagSlugs?, baseModel?, comfyVersion? })`; для каждого slug тега — `workflowTags.some` с полным совпадением slug (**регистронезависимо** после **TASK-040**); `base_model` / `comfy_version` — полное совпадение, регистронезависимо (**TASK-040**); несколько тегов и остальные поля объединяются через **AND** вместе с блоком поиска по `q`. [`lib/catalog/workflow-list.ts`](./lib/catalog/workflow-list.ts) прокидывает те же поля в один `where` для `findMany` и `count`.
 
 **API:** `GET` [`app/api/workflows/route.ts`](./app/api/workflows/route.ts) — `url.searchParams.getAll("tag")` (не `Object.fromEntries`), опциональные `base_model`, `comfy_version`; лимиты и **400**/`issues` при нарушении. Несуществующий slug тега → пустая выдача; зафиксировано в [README.md](./README.md) и [PRD.md](./PRD.md) §14 п.2.
 
-**Проверки в репозитории:** `npm run lint`, `npm run build` — успешно. `npm run db:catalog-filters-smoke` ([`scripts/catalog-filters-smoke.ts`](./scripts/catalog-filters-smoke.ts)) — пересекающиеся теги, разные `base_model`/`comfy_version`, проверка одного и двух тегов, неизвестный тег, AND с `q`. Ручные `test_steps`: `curl` с `?tag=…&base_model=…` на dev.
+**Проверки в репозитории:** `npm run lint`, `npm run build` — успешно. `npm run db:catalog-filters-smoke` — см. **TASK-040** (в т.ч. регистр). Ручные `test_steps`: `curl` с `?tag=…&base_model=…` на dev.
 
 ## TASK-023 (done)
 
@@ -199,3 +199,9 @@
 **Публичная страница каталога** (PRD §5.1, §5.8, §9): маршрут [`/catalog`](./app/catalog/page.tsx) с клиентским [`app/catalog/catalog-client.tsx`](./app/catalog/catalog-client.tsx) — `fetch` на `GET /api/workflows` с query `q` (debounce 300 ms), повторяемые `tag` из поля «Tag slugs» (разделители запятая/пробел), `base_model`, `comfy_version`, `sort`, `order`, пагинация `page` / `pageSize=20`. Список без `<img>`; в строке — title (ссылка на `/workflows/[slug]` для TASK-025), описание `line-clamp-2`, рейтинг и число отзывов, `unique_download_count`, теги (имена), base model и ComfyUI version, опционально автор. Подписи UI на английском. Ошибки валидации API — текст из `issues`. На главной [`app/page.tsx`](./app/page.tsx) добавлена ссылка **Catalog**.
 
 **Проверки в репозитории:** `npm run build` — успешно (маршрут `/catalog` в отчёте сборки). Ручные `test_steps` из `tasks.json`: `npm run dev` → открыть `/catalog`, задать известный slug тега и сменить sort/order → в DevTools Network запросы к `/api/workflows?…` и сверка JSON с экраном.
+
+## TASK-040 (done)
+
+**Регистронезависимые exact-фильтры каталога:** в [`lib/catalog/published-catalog-where.ts`](./lib/catalog/published-catalog-where.ts) для `tag` (slug), `base_model` и `comfy_version` используется Prisma `equals` с `mode: "insensitive"`; логика **AND** с `q` и между несколькими `tag` без изменений. JSDoc в [`lib/catalog/workflow-list.ts`](./lib/catalog/workflow-list.ts). Документация: [PRD.md](./PRD.md) §14 п.2, [README.md](./README.md) (Public catalog API).
+
+**Проверки в репозитории:** `npm run lint`, `npm run build`, `npm run db:catalog-filters-smoke` — расширен проверками альтернативного регистра для slug тега, `base_model` и `comfy_version` (у smoke-фикстуры `w2` поле `comfy_version` задано как `v2.0`). Ручной `curl` на `GET /api/workflows` с теми же значениями в другом регистре даёт те же `id`, что и канонический запрос.

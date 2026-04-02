@@ -3,15 +3,15 @@ import { Prisma, WorkflowStatus } from "@prisma/client";
 export type PublishedCatalogWhereParams = {
   /** Case-insensitive substring on title or description (TASK-021). */
   searchQuery?: string;
-  /** Tag slugs; workflows must have every tag (AND) (TASK-022). */
+  /** Tag slugs; workflows must have every tag (AND); full-string match, case-insensitive (TASK-022, TASK-040). */
   tagSlugs?: string[];
-  /** Exact match on `workflows.base_model`. */
+  /** Full-string match on `workflows.base_model`, case-insensitive (TASK-040). */
   baseModel?: string;
-  /** Exact match on `workflows.comfy_version`. */
+  /** Full-string match on `workflows.comfy_version`, case-insensitive (TASK-040). */
   comfyVersion?: string;
 };
 
-/** Published rows only; optional text search and catalog filters (TASK-021, TASK-022). */
+/** Published rows only; optional text search and catalog filters (TASK-021, TASK-022, TASK-040). */
 export function buildPublishedCatalogWhere(
   params: PublishedCatalogWhereParams = {}
 ): Prisma.WorkflowWhereInput {
@@ -36,16 +36,24 @@ export function buildPublishedCatalogWhere(
   const uniqueTagSlugs = [...new Set(tagSlugs)];
   for (const slug of uniqueTagSlugs) {
     and.push({
-      workflowTags: { some: { tag: { slug } } },
+      workflowTags: {
+        some: {
+          tag: { slug: { equals: slug, mode: "insensitive" } },
+        },
+      },
     });
   }
 
   if (baseModel) {
-    and.push({ baseModel });
+    and.push({
+      baseModel: { equals: baseModel, mode: "insensitive" },
+    });
   }
 
   if (comfyVersion) {
-    and.push({ comfyVersion });
+    and.push({
+      comfyVersion: { equals: comfyVersion, mode: "insensitive" },
+    });
   }
 
   const base: Prisma.WorkflowWhereInput = {

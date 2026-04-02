@@ -105,14 +105,14 @@ async function main() {
     const derived = rows.filter((r) => r.source === "derived");
     const admin = rows.filter((r) => r.source === "admin");
     assertEqual(
-      "derived count",
+      "derived node types after JSON replace",
       derived.map((r) => r.nodeType),
       ["CheckpointLoaderSimple", "KSampler"]
     );
     assertEqual(
-      "admin preserved",
+      "admin overrides cleared after JSON replace (PRD §5.2)",
       admin.map((r) => r.nodeType),
-      ["AdminOnly"]
+      []
     );
   } finally {
     await prisma.workflow

@@ -126,8 +126,16 @@
 
 ## TASK-016 (done)
 
-**Парсер ComfyUI workflow JSON (PRD §14 п.2):** стратегия форматов зафиксирована в [`docs/adr/0001-comfy-workflow-json-formats.md`](./docs/adr/0001-comfy-workflow-json-formats.md) — UI-экспорт (`nodes[].type`) и API-граф (`class_type` по ключам нод), порядок и дедупликация типов. Код: [`lib/comfy/parse-workflow-node-types.ts`](./lib/comfy/parse-workflow-node-types.ts) (`parseComfyWorkflowNodeTypesFromString`, `extractComfyWorkflowNodeTypes`, ошибки `ComfyWorkflowJsonSyntaxError` / `ComfyWorkflowShapeError`), [`lib/comfy/replace-derived-workflow-nodes.ts`](./lib/comfy/replace-derived-workflow-nodes.ts) — транзакция `deleteMany` только для `source=derived`, затем `createMany` с `sortOrder`; строки `admin` не трогаются.
+**Парсер ComfyUI workflow JSON (PRD §14 п.2):** стратегия форматов зафиксирована в [`docs/adr/0001-comfy-workflow-json-formats.md`](./docs/adr/0001-comfy-workflow-json-formats.md) — UI-экспорт (`nodes[].type`) и API-граф (`class_type` по ключам нод), порядок и дедупликация типов. Код: [`lib/comfy/parse-workflow-node-types.ts`](./lib/comfy/parse-workflow-node-types.ts) (`parseComfyWorkflowNodeTypesFromString`, `extractComfyWorkflowNodeTypes`, ошибки `ComfyWorkflowJsonSyntaxError` / `ComfyWorkflowShapeError`). Запись типов в `WorkflowNode` — [`lib/comfy/replace-derived-workflow-nodes.ts`](./lib/comfy/replace-derived-workflow-nodes.ts); политика при замене JSON (сброс admin override) — **TASK-017**.
 
-**Фикстуры:** [`fixtures/comfy-workflow-api-sample.json`](./fixtures/comfy-workflow-api-sample.json), [`fixtures/comfy-workflow-ui-sample.json`](./fixtures/comfy-workflow-ui-sample.json). **Проверки:** `npm run comfy:parse-smoke` ([`scripts/comfy-workflow-parse-smoke.ts`](./scripts/comfy-workflow-parse-smoke.ts)) — эталонные файлы, ожидаемые типы, битый JSON → syntax error, `{}` → shape error; при заданном `DATABASE_URL` — запись derived в БД и сохранение admin-ноды.
+**Фикстуры:** [`fixtures/comfy-workflow-api-sample.json`](./fixtures/comfy-workflow-api-sample.json), [`fixtures/comfy-workflow-ui-sample.json`](./fixtures/comfy-workflow-ui-sample.json). **Проверки:** `npm run comfy:parse-smoke` ([`scripts/comfy-workflow-parse-smoke.ts`](./scripts/comfy-workflow-parse-smoke.ts)) — эталонные файлы, ожидаемые типы, битый JSON → syntax error, `{}` → shape error; при заданном `DATABASE_URL` — см. TASK-017 для сценария admin + derived.
 
 **Репозиторий:** `npm run lint`, `npm run build`, `npm run comfy:parse-smoke` — успешно.
+
+## TASK-017 (done)
+
+**Политика при новой загрузке workflow JSON (PRD §5.2):** функция [`replaceDerivedWorkflowNodes`](./lib/comfy/replace-derived-workflow-nodes.ts) в транзакции удаляет **все** `WorkflowNode` для `workflowId`, затем вставляет только строки `source=derived` из результата парсера. Ручные override (`admin`) не сохраняются после замены JSON; отображаемый список совпадает с derived до следующего сохранения override админом. Политика задокументирована в JSDoc модуля.
+
+**Проверки:** `npm run comfy:parse-smoke` при заданном `DATABASE_URL` — workflow с admin-нодой, затем `replaceDerivedWorkflowNodes` с типами из эталонного JSON; в БД остаются только derived, admin-пусто.
+
+**Репозиторий:** `npm run comfy:parse-smoke` — успешно (parse + DB).
